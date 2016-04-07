@@ -1,5 +1,5 @@
 (cl:in-package :cl-user)
-(load "core.lisp")
+(load (merge-pathnames (directory-namestring *load-pathname*) "core.lisp"))
 (defpackage :ir.builtins
   (:use :ir.core :common-lisp)
   (:shadow + - * / < <= > >= 1+ 1-)
@@ -37,10 +37,14 @@
 		(declare (optimize speed (safety 0)))
 		(the fixnum (apply (function ,(find-symbol (symbol-name opname) "COMMON-LISP")) vals))))
 
-	   (clone-op (opname)
-	     `(defun ,opname (&rest vals)
-		(declare (optimize speed (safety 0)))
-		(apply (function ,(find-symbol (symbol-name opname) "COMMON-LISP")) vals)))
+	   (boolean-op (opname)
+	     (let ((result (gensym)))
+	       `(defun ,opname (&rest vals)
+		  (declare (optimize speed (safety 0)))
+		  (let ((,result (apply (function ,(find-symbol (symbol-name opname) "COMMON-LISP")) vals)))
+		    (if ,result
+			'true
+			'false)))))
 
 	   (define-op1 (opname)
 	     `(defun ,opname (val)
@@ -51,10 +55,10 @@
   (define-op -)
   (define-op *)
   (define-op /)
-  (clone-op <)
-  (clone-op <=)
-  (clone-op >)
-  (clone-op >=)
+  (boolean-op <)
+  (boolean-op <=)
+  (boolean-op >)
+  (boolean-op >=)
   (define-op1 1+)
   (define-op1 1-))
 
