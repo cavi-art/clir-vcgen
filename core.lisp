@@ -1,5 +1,6 @@
-(cl:in-package :cl-user)
+;; CLIR Core. Written in less than 200 lines of Common Lisp.
 
+(cl:in-package :cl-user)
 (defpackage :ir.rt
   (:documentation "Runtime package. Defines no symbols a priori."))
 
@@ -21,7 +22,7 @@
   (:export :list)
   (:export :int)
   (:export :bool :true :false)
-  (:export :load :assertion :declare :the :type :optimize :speed :debug :safety)
+  (:export :load :assertion :declare :var :the :type :optimize :speed :debug :safety)
   (:export :*assume-verified* :*verify-only*)
   (:export :define :lettype :letvar :letconst :let :let* :letfun :case "@"))
 
@@ -87,6 +88,10 @@
 ;;;; Rest of ir.core follows. 
 (cl:in-package :ir.core)
 
+(cl:defmacro var (symbol)
+  symbol)
+
+
 (cl:defmacro lettype (type-symbol param-list type-boolean-expresssion optional-data)
   (declare (cl:ignore optional-data))
   "Defines a type globally in the environment."
@@ -95,9 +100,10 @@
   )
 
 
-(cl:defmacro define (function-name typed-lambda-list &body full-body)
+(cl:defmacro define (function-name typed-lambda-list result-lambda-list &body full-body)
   "Defines an exportable function in the verification unit. The
 function may be mutually recursive with other DEFINE-d functions."
+  (declare (ignore result-lambda-list))
   (cl:let ((body
 	       (assertion-decl-to-code full-body)))
     `(cl:defun ,function-name ,(cl:mapcar #'cl:car typed-lambda-list)
@@ -111,7 +117,12 @@ functions."
   (cl:assert (= 1 (length body)))
   `(cl:labels
        ,(cl:mapcar (cl:lambda (f)
-		     (cons (car f) (cons (cl:mapcar #'car (cl:cadr f)) (maybe-macroexpand (cl:cddr f))))) function-decls)
+		     (let ((function-name (car f))
+			   (function-lambda-list (cl:mapcar #'car (cl:cadr f)))
+			   (return-type (caddr f))
+			   (function-body (cdddr f)))
+			 (cons function-name function-lambda-list (maybe-macroexpand function-body))))
+		   function-decls)
      ,@(maybe-macroexpand body)))
 
 (cl:defmacro let (typed-var-list val &body body)
@@ -159,6 +170,14 @@ or less, a simple destructuring lambda list)"
 	   (cl:destructuring-bind
 		 (pattern form) c
 	     (list pattern (car (maybe-macroexpand (list form)))))) cases)))
+
+
+(cl:defmacro @@ (cname &rest args)
+    "Substitutes the @ function application form for the appropriate
+executable funcall."
+    (if (eq fname :external)
+	`(funcall #'call-external ,@args)
+	`(funcall #',cname ,@args)))
 
 (cl:defmacro @ (fname &rest args)
     "Substitutes the @ function application form for the appropriate
