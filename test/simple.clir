@@ -1,0 +1,20 @@
+
+(verification-unit "SIMPLE"
+		   :sources (((:lang :handmade-clir)
+			      (:module :self)))
+		   :uses (:ir)
+		   :documentation "This is a simple testfile for validating the CLIR rewriting rules.")
+
+
+(define test-define ((A int) (B bool)) ((test-define t))
+  (declare
+   (assertion
+    (precd true)
+    (postcd true)))
+  A)
+
+
+;; Local Variables:
+;; mode: common-lisp
+;; coding: utf-8
+;; End:
