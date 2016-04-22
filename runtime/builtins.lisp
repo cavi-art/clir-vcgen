@@ -1,5 +1,4 @@
 (cl:in-package :cl-user)
-(load (merge-pathnames (directory-namestring *load-pathname*) "core.lisp"))
 (defpackage :ir.builtins
   (:use :ir.core :common-lisp)
   (:shadow + - * / < <= > >= 1+ 1-)
