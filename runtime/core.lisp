@@ -59,8 +59,11 @@
 (deftype ir.core:int () `(cl:integer ,cl:most-negative-fixnum ,cl:most-positive-fixnum))
 (deftype ir.core:bool () '(cl:member ir.core:true ir.core:false))
 
-(cl:defparameter ir.core:*assume-verified* nil)
-(cl:defparameter ir.core:*verify-only* nil)
+;; We declaim assertion so that compiled files with assertions get no warnings
+(declaim (declaration ir.core:assertion))
+
+(defparameter ir.core:*assume-verified* nil)
+(defparameter ir.core:*verify-only* nil)
 
 ;; Override CL-USER environment to define package (CLIR entry point)
 
