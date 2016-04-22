@@ -56,8 +56,8 @@
 
 ;;;; Package ir.core must define vars before overriding package in cl-user.
 
-(cl:deftype ir.core:int () `(cl:integer ,cl:most-negative-fixnum ,cl:most-positive-fixnum))
-(cl:deftype ir.core:bool () '(cl:member true false))
+(deftype ir.core:int () `(cl:integer ,cl:most-negative-fixnum ,cl:most-positive-fixnum))
+(deftype ir.core:bool () '(cl:member ir.core:true ir.core:false))
 
 (cl:defparameter ir.core:*assume-verified* nil)
 (cl:defparameter ir.core:*verify-only* nil)
