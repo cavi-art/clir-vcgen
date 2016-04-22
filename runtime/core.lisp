@@ -204,6 +204,14 @@ or less, a simple destructuring lambda list)"
 	       (declare ,@(get-type-for-decl typed-var-list))
 	       ,(from-clir (car body)))))))
 
+(defun from-clir-case-alt (pattern)
+  (typecase pattern
+    (symbol pattern)
+    (cons (case (car pattern)
+	    ((ir.core:the) (third pattern))
+	    ((ir.core:@@) (error "case-constructor-destructuring is not yet implemented"))
+	    (t (error "Unknown case alternative pattern: ~S" pattern))))))
+
 (defmacro ir.core:case (condition &body cases)
   "Defines a case conditional."
   ;; TODO The cases may be destructuring
@@ -213,7 +221,7 @@ or less, a simple destructuring lambda list)"
 	 (cl:lambda (c)
 	   (cl:destructuring-bind
 		 (pattern form) c
-	     (list pattern (from-clir form)))) cases)))
+	     (list (from-clir-case-alt pattern) (from-clir form)))) cases)))
 
 
 (defmacro ir.core:@@ (cname &rest args)
