@@ -1,6 +1,6 @@
 (cl:in-package :cl-user)
-(defpackage :ir.builtins
-  (:use :ir.core :common-lisp)
+(defpackage :ir.rt.builtins
+  (:use :ir.rt.core :common-lisp)
   (:shadow + - * / < <= > >= 1+ 1-)
   (:export + - * / < <= > >= 1+ 1-)
 
@@ -20,7 +20,7 @@
   (:export :heap :heap-p :loc :new-heap :sel-heap :mod-heap :newptr-in-heap)
   (:export :sel-array :mod-array :sel-array-heap
 	   :mod-array-heap :len-array-heap))
-(in-package :ir.builtins)
+(in-package :ir.rt.builtins)
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (declaim (optimize safety)))

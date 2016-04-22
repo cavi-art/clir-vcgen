@@ -4,12 +4,12 @@
 (defpackage :ir.rt
   (:documentation "Runtime package. Defines no symbols a priori."))
 
-(defpackage :ir.core.impl
+(defpackage :ir.rt.core.impl
   (:use :cl)
   (:export :assertion :get-package-symbol :assertion-decl-to-code :signature-to-typedecl
 	   :lambda-list-type-decls :maybe-macroexpand))
 
-(defpackage :ir.core
+(defpackage :ir.rt.core
   (:import-from :cl &allow-other-keys &body &key &rest)
   (:import-from :cl :declare :optimize :speed :debug :safety)
   (:import-from :cl :the :type :nil :t :car :cdr :length :and :or :list)
@@ -23,8 +23,8 @@
   (:export :define :lettype :letvar :letconst :let :let* :letfun :case "@" "@@"))
 
 
-(in-package :ir.core.impl)
-;;;; Package ir.core.impl follows.
+(in-package :ir.rt.core.impl)
+;;;; Package ir.rt.core.impl follows.
 
 ;; Declare that "assertion" is a valid "declare" form.
 (eval-when (:compile-toplevel :load-toplevel :execute)
@@ -54,22 +54,22 @@
   (mapcar (lambda (e) (list 'type (cadr e) (car e)))
 	  typed-lambda-list))
 
-;;;; Package ir.core must define vars before overriding package in cl-user.
+;;;; Package ir.rt.core must define vars before overriding package in cl-user.
 
-(deftype ir.core:int () `(cl:integer ,cl:most-negative-fixnum ,cl:most-positive-fixnum))
-(deftype ir.core:bool () '(cl:member ir.core:true ir.core:false))
+(deftype ir.rt.core:int () `(cl:integer ,cl:most-negative-fixnum ,cl:most-positive-fixnum))
+(deftype ir.rt.core:bool () '(cl:member ir.rt.core:true ir.rt.core:false))
 
 ;; We declaim assertion so that compiled files with assertions get no warnings
-(declaim (declaration ir.core:assertion))
+(declaim (declaration ir.rt.core:assertion))
 
-(defparameter ir.core:*assume-verified* nil)
-(defparameter ir.core:*verify-only* nil)
+(defparameter ir.rt.core:*assume-verified* nil)
+(defparameter ir.rt.core:*verify-only* nil)
 
 ;; Override CL-USER environment to define package (CLIR entry point)
 
-(defmacro ir.core:verification-unit (package-id &key sources uses documentation verify-only assume-verified)
+(defmacro ir.rt.core:verification-unit (package-id &key sources uses documentation verify-only assume-verified)
   (declare (ignorable sources))
-  (let ((pkg (ir.core.impl:get-package-symbol package-id)))
+  (let ((pkg (ir.rt.core.impl:get-package-symbol package-id)))
       `(progn (when (find-package ,pkg)
 		(unuse-package ,@uses ,pkg)
 		(delete-package ,pkg))
@@ -77,8 +77,8 @@
 		 (:use ,@uses)
 		 (:documentation ,documentation))
 	    (in-package ,pkg)
-	    (cl:mapcar (cl:lambda (f) (cl:push f ir.core:*assume-verified*)) ,assume-verified)
-	    (cl:mapcar (cl:lambda (f) (cl:push f ir.core:*verify-only*)) ,verify-only))))
+	    (cl:mapcar (cl:lambda (f) (cl:push f ir.rt.core:*assume-verified*)) ,assume-verified)
+	    (cl:mapcar (cl:lambda (f) (cl:push f ir.rt.core:*verify-only*)) ,verify-only))))
 
 (defun from-clir (clir-expr)
   "Returns a Common Lisp expression from a CLIR expression. I.e., this
@@ -86,9 +86,9 @@
   (if (symbolp clir-expr)
       clir-expr ; It's a variable
       (case (car clir-expr)
-	((ir.core:var) (cadr clir-expr))
-	((ir.core:the) (third clir-expr))
-	((ir.core:@ ir.core:@@ ir.core:let ir.core:letfun ir.core:case) (macroexpand-1 clir-expr))
+	((ir.rt.core:var) (cadr clir-expr))
+	((ir.rt.core:the) (third clir-expr))
+	((ir.rt.core:@ ir.rt.core:@@ ir.rt.core:let ir.rt.core:letfun ir.rt.core:case) (macroexpand-1 clir-expr))
 	(t (multiple-value-bind (expr expanded) (macroexpand-1 clir-expr)
 	     (assert expanded)
 	     expr)))))
@@ -101,7 +101,7 @@ works with the 'any' (t) type."
   (let ((result-type t))
     `(the ,result-type ,expr)))
 
-(defmacro ir.core:define (function-name typed-lambda-list result-lambda-list declaration &body full-body)
+(defmacro ir.rt.core:define (function-name typed-lambda-list result-lambda-list declaration &body full-body)
   (let ((function-lambda-list (mapcar #'car typed-lambda-list)))
     `(defun ,function-name ,function-lambda-list
        (declare ,@ (lambda-list-type-decls typed-lambda-list))
@@ -109,7 +109,7 @@ works with the 'any' (t) type."
        ,(enclose-in-typed-return-type result-lambda-list (from-clir (car full-body))))))
 
 
-(defmacro ir.core:lettype (type-symbol param-list type-boolean-expresssion optional-data)
+(defmacro ir.rt.core:lettype (type-symbol param-list type-boolean-expresssion optional-data)
   ;; TODO This is not working
   (declare (ignore optional-data))
   "Defines a type globally in the environment."
@@ -144,7 +144,7 @@ that only executable things get there."
 
 
 
-(defmacro ir.core:letfun (function-decls &body body)
+(defmacro ir.rt.core:letfun (function-decls &body body)
   "Defines a lexically bound set of possibly mutually-recursive
 functions."
   (assert (not (cdr body))) ;; Only one expression
@@ -166,7 +166,7 @@ functions."
 		function-decls)
      ,(from-clir (car body))))
 
-(defmacro ir.core:let (typed-var-list val &body body)
+(defmacro ir.rt.core:let (typed-var-list val &body body)
   "Lexically binds a var, syntax is: (let var val body-form). It can
 destructure tuples as (let (a b) (list a b) a)"
   (assert (not (cdr body))) ;; Only one expression
@@ -208,11 +208,11 @@ or less, a simple destructuring lambda list)"
   (typecase pattern
     (symbol pattern)
     (cons (case (car pattern)
-	    ((ir.core:the) (third pattern))
-	    ((ir.core:@@) (error "case-constructor-destructuring is not yet implemented"))
+	    ((ir.rt.core:the) (third pattern))
+	    ((ir.rt.core:@@) (error "case-constructor-destructuring is not yet implemented"))
 	    (t (error "Unknown case alternative pattern: ~S" pattern))))))
 
-(defmacro ir.core:case (condition &body cases)
+(defmacro ir.rt.core:case (condition &body cases)
   "Defines a case conditional."
   ;; TODO The cases may be destructuring
   `(cl:case
@@ -224,12 +224,12 @@ or less, a simple destructuring lambda list)"
 	     (list (from-clir-case-alt pattern) (from-clir form)))) cases)))
 
 
-(defmacro ir.core:@@ (cname &rest args)
+(defmacro ir.rt.core:@@ (cname &rest args)
   "Substitutes the @ function application form for the appropriate
 executable funcall."
   `(funcall #',cname ,@ (mapcar #'from-clir args)))
 
-(defmacro ir.core:@ (fname &rest args)
+(defmacro ir.rt.core:@ (fname &rest args)
   "Substitutes the @ function application form for the appropriate
 executable funcall."
   (if (eq fname :external)
@@ -257,10 +257,11 @@ executable funcall."
 
 
 
-(cons 'progn (mapcar #'macroexpand-1 (ir.core.impl::load-file #P"../test/inssort.clir")))
+;; (cons 'progn (mapcar #'macroexpand-1 (ir.rt.core.impl::load-file #P"../test/inssort.clir")))
 
 
-;; TODO Change identifiers to belong to inssort, not ir.core on read!
+
+;; TODO Change identifiers to belong to inssort, not ir.rt.core on read!
 
 
 

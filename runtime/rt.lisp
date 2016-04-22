@@ -3,14 +3,11 @@
 	    ;; speed (safety 0)
 	    ))
 
-(print *load-pathname*)
-(print (directory-namestring *load-pathname*))
-(print (pathname (directory-namestring *load-pathname*)))
-
-(unless (find-package :ir)
-  (defpackage :ir
-    (:use :ir.core :ir.builtins)))
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (unless (find-package :ir)
+    (defpackage :ir
+      (:use :ir.rt.core :ir.rt.builtins))))
 
 (in-package :ir)
-(cl-reexport:reexport-from :ir.core)
-(cl-reexport:reexport-from :ir.builtins)
+(cl-reexport:reexport-from :ir.rt.core)
+(cl-reexport:reexport-from :ir.rt.builtins)
