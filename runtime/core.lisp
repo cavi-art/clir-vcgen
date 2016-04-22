@@ -77,8 +77,8 @@
 		 (:use ,@uses)
 		 (:documentation ,documentation))
 	    (in-package ,pkg)
-	    (mapcar (lambda (f) (push f ir.core:*assume-verified*)) ,assume-verified)
-	    (mapcar (lambda (f) (push f ir.core:*verify-only*)) ,verify-only))))
+	    (cl:mapcar (cl:lambda (f) (cl:push f ir.core:*assume-verified*)) ,assume-verified)
+	    (cl:mapcar (cl:lambda (f) (cl:push f ir.core:*verify-only*)) ,verify-only))))
 
 (defun from-clir (clir-expr)
   "Returns a Common Lisp expression from a CLIR expression. I.e., this
