@@ -247,12 +247,14 @@ executable funcall."
 		   (in-package ,pkg)
 		   ,@body)
 	      (in-package ,prev-package)))))
-    (with-changed-package :ir.core
+    (with-changed-package :ir
       (with-open-file (clir-stream pathname)
-	(loop
-	   for a = (read clir-stream nil)
-	   while a
-	   collect a)))))
+      	(loop
+      	   for a = (read clir-stream nil)
+      	   while a
+      	   collect a))
+      )))
+
 
 
 (cons 'progn (mapcar #'macroexpand-1 (load-file #P"inssort.clir")))
