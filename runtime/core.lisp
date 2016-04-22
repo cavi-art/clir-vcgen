@@ -172,7 +172,7 @@ destructure tuples as (let (a b) (list a b) a)"
   (assert (not (cdr body))) ;; Only one expression
   (if (and (= 1 (length typed-var-list))
 	   (= 2 (length (car typed-var-list))))
-      `(let ,(caar typed-var-list) (the ,(cadar typed-var-list) ,(from-clir val)) ,(from-clir (car body)))
+      `(let ((,(caar typed-var-list) (the ,(cadar typed-var-list) ,(from-clir val)))) ,(from-clir (car body)))
 
       ;; TODO Rewrite case for more than one variable
       (if (and (= 2 (length typed-var-list))
