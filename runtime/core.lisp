@@ -83,14 +83,15 @@
 (defun from-clir (clir-expr)
   "Returns a Common Lisp expression from a CLIR expression. I.e., this
   parses <form> entries in the grammar."
-  (assert (not (symbolp clir-expr)))
-  (case (car clir-expr)
-    ((ir.core:var) (cadr clir-expr))
-    ((ir.core:the) `(the ,@ (cdr clir-expr)))
-    ((ir.core:@ ir.core:@@ ir.core:let ir.core:letfun ir.core:case) (macroexpand-1 clir-expr))
-    (t (multiple-value-bind (expr expanded) (macroexpand-1 clir-expr)
-	 ;; (assert expanded)
-	 expr))))
+  (if (symbolp clir-expr)
+      clir-expr ; It's a variable
+      (case (car clir-expr)
+	((ir.core:var) (cadr clir-expr))
+	((ir.core:the) (third clir-expr))
+	((ir.core:@ ir.core:@@ ir.core:let ir.core:letfun ir.core:case) (macroexpand-1 clir-expr))
+	(t (multiple-value-bind (expr expanded) (macroexpand-1 clir-expr)
+	     (assert expanded)
+	     expr)))))
 
 
 (defun enclose-in-typed-return-type (return-lambda-list expr)
