@@ -257,7 +257,8 @@ executable funcall."
 
 
 
-(cons 'progn (mapcar #'macroexpand-1 (load-file #P"inssort.clir")))
+(cons 'progn (mapcar #'macroexpand-1 (ir.core.impl::load-file #P"../test/inssort.clir")))
+
 
 ;; TODO Change identifiers to belong to inssort, not ir.core on read!
 
