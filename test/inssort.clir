@@ -30,7 +30,7 @@
     (precd true)
     (postcd (:forall (E (array int))
 		     (-> (= E (deref inssort V))
-			 sorted E)))))
+			 (sorted E))))))
   (letfun
       ((f1 ((V (loc (array int))) (H heap)) ((_ heap))
 	 (let ((I int)) (the int 0)
