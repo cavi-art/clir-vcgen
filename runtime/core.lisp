@@ -23,6 +23,7 @@
 
 (cl:in-package :cl-user)
 (defpackage :ir.rt
+  (:use)
   (:documentation "Runtime package. Defines no symbols a priori."))
 
 (defpackage :ir.rt.core.impl
@@ -31,6 +32,7 @@
 	   :lambda-list-type-decls :maybe-macroexpand))
 
 (defpackage :ir.rt.core
+  (:use)
   (:import-from :cl &allow-other-keys &body &key &rest)
   (:import-from :cl :declare :optimize :speed :debug :safety)
   (:import-from :cl :the :type :nil :t :car :cdr :length :and :or :list)
