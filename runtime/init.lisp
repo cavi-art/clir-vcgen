@@ -23,6 +23,9 @@
 (require "asdf")
 (push (directory-namestring *load-pathname*) asdf:*central-registry*)
 
-(cl:in-package :asdf-user)
+(defpackage :clir-asdf-user
+  (:use :cl :asdf))
+(in-package :clir-asdf-user)
+
 (oos 'load-op 'clir)
 
