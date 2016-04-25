@@ -24,13 +24,14 @@
 (declaim (optimize debug))
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (defun delete-package-recursive (package-identifier)
-    (let ((pkg (find-package package-identifier)))
-      (when pkg
-	(mapcar #'delete-package-recursive (package-used-by-list pkg))
-	(when (find-package package-identifier)
-	  (delete-package pkg)))))
-  (delete-package-recursive :caviart.vc-gen))
+  (labels
+      ((delete-package-recursive (package-identifier)
+	 (let ((pkg (find-package package-identifier)))
+	   (when pkg
+	     (mapcar #'delete-package-recursive (package-used-by-list pkg))
+	     (when (find-package package-identifier)
+	       (delete-package pkg))))))
+    (delete-package-recursive :caviart.vc-gen)))
 
 (defpackage :caviart.vc-gen
   (:documentation "Functionality for generating Verification Conditions for later use in Why3")
