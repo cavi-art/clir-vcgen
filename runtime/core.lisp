@@ -258,8 +258,51 @@ executable funcall."
       `(,fname ,@ (mapcar #'from-clir args))))
 
 
+(defmacro package-protect (&body body)
+  (let ((prev-package (gensym)))
+    `(let ((,prev-package (package-name *package*)))
+       (unwind-protect
+	    (progn ,@body)
+	 (eval (list 'in-package ,prev-package))))))
+
+
+(defmacro with-changed-package (pkg &body body)
+  `(package-protect
+     (eval (list 'in-package ,pkg))
+     ,@body))
+
+(defmacro with-throwaway-package (uses nicknames &body body)
+  "Evaluates content in a throwaway `GENSYM' package, which gets later
+deleted."
+  `(let ((pkg-name (symbol-name (gensym "THROWPKG"))))
+     (make-package pkg-name :use ',uses :nicknames ,nicknames)
+     (unwind-protect
+	  (with-changed-package pkg-name
+	    ,@body)
+       (delete-package pkg-name)
+       )))
 
 (defun load-file (pathname)
+  "Loads a file eval'uating package changes, so that identifiers will
+get read and `INTERN'-ed on their proper packages."
+  (with-throwaway-package (:IR) nil
+    ;; We need to use the IR package so that we import the
+    ;; verification-unit construct in order to `EVAL' it on the `LOOP'
+    ;; to make the new package definition.
+    (with-open-file (clir-stream pathname)
+      (loop
+	 for a = (read clir-stream nil)
+	 while a
+	 if (and (consp a)
+		 (symbolp (car a))
+		 (string-equal (symbol-name (car a))
+			       "verification-unit"))
+	 collect (eval a)
+	 else
+	 collect a))))
+
+
+(defun execute-clir-file (pathname)
   (macrolet
       ((with-changed-package (pkg &body body)
 	 (let ((prev-package (package-name *package*)))
@@ -270,20 +313,11 @@ executable funcall."
 	      (in-package ,prev-package)))))
     (with-changed-package :ir
       (with-open-file (clir-stream pathname)
-      	(loop
-      	   for a = (read clir-stream nil)
-      	   while a
-      	   collect a))
-      )))
+	(loop
+	   for a = (read clir-stream nil)
+	   while a
+	   collect (eval a))))))
 
 
-
+;; (ir.rt.core.impl::execute-clir-file #P"../test/inssort.clir")
 ;; (cons 'progn (mapcar #'macroexpand-1 (ir.rt.core.impl::load-file #P"../test/inssort.clir")))
-
-
-
-;; TODO Change identifiers to belong to inssort, not ir.rt.core on read!
-
-
-
-
