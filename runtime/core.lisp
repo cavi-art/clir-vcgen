@@ -28,6 +28,10 @@
   (:export :assertion :get-package-symbol :assertion-decl-to-code :signature-to-typedecl
 	   :lambda-list-type-decls :maybe-macroexpand))
 
+(defpackage :ir.rt.repl
+  (:use :cl :ir.utils)
+  (:export :load-file :eval-clir-file))
+
 (defpackage :ir.rt.core
   (:use)
   (:import-from :cl &allow-other-keys &body &key &rest)
@@ -257,34 +261,10 @@ executable funcall."
       `(,fname ,@ (mapcar #'from-clir args))))
 
 
-(defmacro package-protect (&body body)
-  (let ((prev-package (gensym)))
-    `(let ((,prev-package (package-name *package*)))
-       (unwind-protect
-	    (progn ,@body)
-	 (eval (list 'in-package ,prev-package))))))
-
-
-(defmacro with-changed-package (pkg &body body)
-  `(package-protect
-     (eval (list 'in-package ,pkg))
-     ,@body))
-
-(defmacro with-throwaway-package (uses nicknames &body body)
-  "Evaluates content in a throwaway `GENSYM' package, which gets later
-deleted."
-  `(let ((pkg-name (symbol-name (gensym "THROWPKG"))))
-     (make-package pkg-name :use ',uses :nicknames ,nicknames)
-     (unwind-protect
-	  (with-changed-package pkg-name
-	    ,@body)
-       (delete-package pkg-name)
-       )))
-
 (defun load-file (pathname)
   "Loads a file eval'uating package changes, so that identifiers will
 get read and `INTERN'-ed on their proper packages."
-  (with-throwaway-package (:IR) nil
+  (with-throwaway-package (:ir.rt) (:ir)
     ;; We need to use the IR package so that we import the
     ;; verification-unit construct in order to `EVAL' it on the `LOOP'
     ;; to make the new package definition.
@@ -296,27 +276,27 @@ get read and `INTERN'-ed on their proper packages."
 		 (symbolp (car a))
 		 (string-equal (symbol-name (car a))
 			       "verification-unit"))
-	 collect (eval a)
+	 collect (progn (eval a) a)
 	 else
 	 collect a))))
 
 
-(defun execute-clir-file (pathname)
-  (macrolet
-      ((with-changed-package (pkg &body body)
-	 (let ((prev-package (package-name *package*)))
-	   `(unwind-protect
-		 (progn
-		   (in-package ,pkg)
-		   ,@body)
-	      (in-package ,prev-package)))))
-    (with-changed-package :ir
-      (with-open-file (clir-stream pathname)
-	(loop
-	   for a = (read clir-stream nil)
-	   while a
-	   collect (eval a))))))
+(defun eval-clir-file (pathname)
+  (with-throwaway-package (:ir.rt) (:ir)
+    (with-open-file (clir-stream pathname)
+      (loop for a = (read clir-stream nil)
+	 while a
+	 collect (eval a)))))
 
 
-;; (ir.rt.core.impl::execute-clir-file #P"../test/inssort.clir")
+;; (ir.rt.core.impl::eval-clir-file #P"../test/inssort.clir")
+
+
 ;; (cons 'progn (mapcar #'macroexpand-1 (ir.rt.core.impl::load-file #P"../test/inssort.clir")))
+
+;; (ir.rt.core.impl::load-file #P"../test/inssort.clir")
+
+;; (ir.rt.core.impl::load-file #P"../test/simple.clir")
+
+
+
