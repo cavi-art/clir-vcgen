@@ -34,17 +34,30 @@
 
 (defpackage :ir.rt.core
   (:use)
-  (:import-from :cl &allow-other-keys &body &key &rest)
-  (:import-from :cl :declare :optimize :speed :debug :safety)
-  (:import-from :cl :the :type :nil :t :car :cdr :length :and :or :list)
 
+  ;; Runtime directives
+  (:import-from :cl :declare :optimize :speed :debug :safety)
+  (:export :declare :optimize :speed :debug :safety)
+
+  ;; Logical connections
+  (:import-from :cl :and :or)
+  (:export :and :or)
+
+  ;; We can use the same `the' and `type' as CL.
+  (:import-from :cl :the :type)
+  (:export :the :type)
+
+  ;; Our basic macro for defining everything else.
   (:export :verification-unit)
-  (:export :list)
+
+  ;; Basic types
   (:export :int)
   (:export :bool :true :false)
-  (:export :load :assertion :declare :var :the :type :optimize :speed :debug :safety)
+
   (:export :*assume-verified* :*verify-only*)
-  (:export :define :lettype :letvar :letconst :let :let* :letfun :case "@" "@@"))
+
+  ;; Our own DSL keywords
+  (:export :assertion :define :lettype :letvar :letconst :let :let* :letfun :case "@" "@@"))
 
 
 (in-package :ir.rt.core.impl)
@@ -110,7 +123,6 @@
   (if (symbolp clir-expr)
       clir-expr ; It's a variable
       (case (car clir-expr)
-	((ir.rt.core:var) (cadr clir-expr))
 	((ir.rt.core:the) (third clir-expr))
 	((ir.rt.core:@ ir.rt.core:@@ ir.rt.core:let ir.rt.core:letfun ir.rt.core:case) (macroexpand-1 clir-expr))
 	(t (multiple-value-bind (expr expanded) (macroexpand-1 clir-expr)
@@ -290,7 +302,6 @@ get read and `INTERN'-ed on their proper packages."
 
 
 ;; (ir.rt.core.impl::eval-clir-file #P"../test/inssort.clir")
-
 
 ;; (cons 'progn (mapcar #'macroexpand-1 (ir.rt.core.impl::load-file #P"../test/inssort.clir")))
 

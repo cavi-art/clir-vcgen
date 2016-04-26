@@ -76,3 +76,11 @@ from any package that uses it and deleted."
 	 (mapcar (lambda (p) (unuse-package ,pkg p))
 		 (package-used-by-list ,pkg))
 	 (funcall #'delete-package pkg-name)))))
+
+
+(defun delete-package-recursive (package-identifier)
+  (let ((pkg (find-package package-identifier)))
+    (when pkg
+      (mapcar #'delete-package (package-used-by-list pkg))
+      (when (find-package package-identifier)
+	(delete-package pkg)))))
