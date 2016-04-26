@@ -4,7 +4,8 @@
   :author "Santiago Saavedra <s.saavedra@fdi.ucm.es>"
   :licence "GPL3"
   :components ((:file "cl-reexport")
-	       (:file "core")
+	       (:file "utils")
+	       (:file "core" :depends-on ("utils"))
 	       (:file "builtins" :depends-on ("core"))
 	       (:file "rt" :depends-on ("cl-reexport" "core" "builtins"))
 	       ))

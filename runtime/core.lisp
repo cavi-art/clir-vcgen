@@ -22,12 +22,9 @@
 ;; CLIR Core.
 
 (cl:in-package :cl-user)
-(defpackage :ir.rt
-  (:use)
-  (:documentation "Runtime package. Defines no symbols a priori."))
 
 (defpackage :ir.rt.core.impl
-  (:use :cl)
+  (:use :cl :ir.utils)
   (:export :assertion :get-package-symbol :assertion-decl-to-code :signature-to-typedecl
 	   :lambda-list-type-decls :maybe-macroexpand))
 

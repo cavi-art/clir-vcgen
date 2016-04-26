@@ -25,10 +25,10 @@
 	    ))
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (unless (find-package :ir)
-    (defpackage :ir
+  (unless (find-package :ir.rt)
+    (defpackage :ir.rt
       (:use :ir.rt.core :ir.rt.builtins))))
 
-(in-package :ir)
+(in-package :ir.rt)
 (cl-reexport:reexport-from :ir.rt.core)
 (cl-reexport:reexport-from :ir.rt.builtins)
