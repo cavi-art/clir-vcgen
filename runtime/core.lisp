@@ -108,7 +108,7 @@
   (declare (ignorable sources))
   (let ((pkg (ir.rt.core.impl:get-package-symbol package-id)))
       `(progn (when (find-package ,pkg)
-		(unuse-package ,@uses ,pkg)
+		(unuse-package ',@uses ,pkg)
 		(delete-package ,pkg))
 	      (defpackage ,pkg
 		 (:use ,@uses)
