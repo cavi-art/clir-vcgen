@@ -2,10 +2,8 @@
   :description "Common Lisp-like Intermediate Representation for CAVI-ART"
   :version "0.0.1"
   :author "Santiago Saavedra <s.saavedra@fdi.ucm.es>"
-  :licence "GPL3"
+  :licence "AGPL3"
   :components ((:file "cl-reexport")
-	       (:file "utils")
+	       (:file "utils" :depends-on ("cl-reexport"))
 	       (:file "core" :depends-on ("utils"))
-	       (:file "builtins" :depends-on ("core"))
-	       (:file "rt" :depends-on ("cl-reexport" "core" "builtins"))
-	       ))
+	       (:file "builtins" :depends-on ("core"))))
