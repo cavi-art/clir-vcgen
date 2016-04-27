@@ -21,8 +21,15 @@
 (defpackage :ir.utils
   (:use :cl)
   (:export :protect-package :with-changed-package :with-throwaway-package)
-  (:export :delete-package-recursive))
+  (:export :delete-package-recursive :get-package-symbol))
 (in-package :ir.utils)
+
+(defun get-package-symbol (input-package-symbol &optional (pkg "KEYWORD"))
+  ;; (return-from get-package-symbol input-package-symbol)
+  (if (stringp input-package-symbol)
+      input-package-symbol
+      (intern (symbol-name input-package-symbol) pkg)))
+
 
 (defmacro protect-package (pkg body &body cleanup)
   "Ensures that a package name and nicknames, if any, are preserved

@@ -25,7 +25,7 @@
 
 (defpackage :ir.rt.core.impl
   (:use :cl :ir.utils)
-  (:export :assertion :get-package-symbol :assertion-decl-to-code :signature-to-typedecl
+  (:export :assertion :assertion-decl-to-code :signature-to-typedecl
 	   :lambda-list-type-decls :maybe-macroexpand))
 
 (defpackage :ir.rt.repl
@@ -68,12 +68,6 @@
   (declaim (declaration assertion)))
 
 (defparameter *auto-macroexpand* t)
-
-(defun get-package-symbol (input-package-symbol &optional (pkg "KEYWORD"))
-  ;; (return-from get-package-symbol input-package-symbol)
-  (if (stringp input-package-symbol)
-      input-package-symbol
-      (intern (symbol-name input-package-symbol) pkg)))
 
 (defun assertion-decl-to-code (body-forms)
   (if (assoc 'declare body-forms)
