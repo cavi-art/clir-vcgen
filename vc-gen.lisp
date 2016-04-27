@@ -133,14 +133,9 @@ defun-ish body"
 
 
 ;;;; Grammar follows 
-(defmacro ir.rt.core:verification-unit (package-id &key sources uses documentation verify-only assume-verified)
-  (declare (ignorable sources))
-)
-
-
 (defmacro ir.vc.core:verification-unit (package-id &key sources uses documentation verify-only assume-verified)
-  (declare (ignorable sources uses documentation verify-only assume-verified))
-  (let ((pkg (ir.rt.core.impl:get-package-symbol package-id)))
+  (declare (ignorable sources))
+  (let ((pkg (get-package-symbol package-id)))
       `(progn (when (find-package ,pkg)
 		(unuse-package ',@uses ,pkg)
 		(delete-package ,pkg))
@@ -148,9 +143,10 @@ defun-ish body"
 		 (:use ,@uses)
 		 (:documentation ,documentation))
 	    (in-package ,pkg)
-	    (cl:mapcar (cl:lambda (f) (cl:push f ir.rt.core:*assume-verified*)) ,assume-verified)
-	    (cl:mapcar (cl:lambda (f) (cl:push f ir.rt.core:*verify-only*)) ,verify-only)
+	    (cl:mapcar (cl:lambda (f) (cl:push f ir.vc.core:*assume-verified*)) ,assume-verified)
+	    (cl:mapcar (cl:lambda (f) (cl:push f ir.vc.core:*verify-only*)) ,verify-only)
 	    (verifier-output-comment "Parsing units in package ~a~%" ,package-id))))
+
 
 (defmacro ir.vc.core:lettype (type-symbol param-list type-boolean-expression optional-data)
   (declare (ignorable type-boolean-expression))
@@ -161,22 +157,92 @@ defun-ish body"
 (deftype ir.vc.core:int () `(cl:integer ,cl:most-negative-fixnum ,cl:most-positive-fixnum))
 (deftype ir.vc.core:bool () '(cl:member true false))
 
-(defmacro ir.vc.core:define (function-name typed-lambda-list result-arg &body full-body)
+
+(defvar *premise-list*)
+(defvar *variable-list*)
+(defvar *function-list*)
+
+
+(defmacro with-empty-premise-list (&body body)
+  `(let ((*premise-list* nil))
+     ,@body))
+
+(defmacro with-premise (content &body body)
+  `(let ((*premise-list* (cons ,content *premise-list*)))
+     ,@body))
+
+(defmacro terminal-expression (expression &key type)
+  "We have to do postcd/{result=expression}"
+  (@postcd *current-function* :result expression))
+
+(defmacro with-variables (typed-variable-list &body body)
+  "Introduces variables in the `premise-list' and `symbol-macrolet's
+  those variables so that when they are `macroexpand-1'-ed they will
+  be known as variables and the postcondition will be well formed."
+  (labels ((symbol-macroletize (typed-var)
+	     (destructuring-bind (var-name var-type) typed-var
+	       `(,var-name (terminal-expression ',var-name :type ,var-type)))))
+    `(let ((*premise-list* (append (list :forall typed-variable-list) *premise-list*)))
+       (symbol-macrolet ,(mapcar #'symbol-macroletize typed-variable-list)
+	 ,@body))))
+
+(defun rename-symbols (formula original-symbols new-symbols)
+  ;; Simple s-exp tree walker
+  (typecase formula
+    (symbol (let ((p (position formula original-symbols)))
+	      (if p
+		  (nth p new-symbols)
+		  formula)))
+    (cons (rename-symbols (car formula) original-symbols new-symbols)
+	  (rename-symbols (cdr formula) original-symbols new-symbols))
+    (nil nil)))
+
+(defmacro ir.vc.core:define (&whole definition
+			       function-name typed-lambda-list result-arg
+			     &body full-body)
   "`DEFINE' introduces a set of goals. There should be pre/post
   conditions in this body, and from the expression (likely a letfun)
   we should increase our goal-set until we finally prove the latest
-  expression implies the postcondition. Additionally, the definitions
-  in this define may call definitions in another define, so the goals
-  cannot be checked inline by macroexpansion."
-  (declare (ignorable function-name typed-lambda-list result-arg full-body))
-  (push (list function-name typed-lambda-list result-arg full-body) *entry-points*))
+  expression implies the postcondition. For the moment, a define is
+  self-contained, meaning definitions inside cannot call another
+  define."
+  (declare (ignorable result-arg))
+  `(defun ,function-name ()
+     (with-empty-premise-list
+       (with-variables ,typed-lambda-list
+	 (with-function-definition ',(cdr definition)
+	   (with-current-function ,function-name
+	     ,@full-body))))))
+
+(defun @precd (function-name &rest rest)
+  (let* ((f (assoc function-name *function-list*))
+	 (precd (get-precondition f))
+	 (parameter-list (get-typed-lambda-list f)))
+    (when precd
+      ;; Rename parameters
+      (rename-symbols precd parameter-list rest))))
 
 (defmacro ir.vc.core:@ (function-name &rest rest)
   "We will use this macro to call all further functions. Depending
   on whether they already have pre/post conditions on them, we will
   terminate the goal or pursue further by interpreting the next
   function."
-  (declare (ignorable function-name rest)))
+  (let ((precd (gensym))
+	(postcd (gensym)))
+    `(let ((,precd (@precd ,function-name ,@rest))
+	   (,postcd (@postcd ,function-name ,@rest)))
+       (if ,precd
+	   (output-goal (@precd ,function-name ,@rest))
+	   (progn
+	     ;; Literally macroexpand the result of the function with our arguments
+	     (let ((sub-fun-body (rename-symbols (get-function-body function-name) ,@rest)))
+	       sub-fun-body)
+	     ))
+
+       (if ,postcd
+	   (with-premise (@postcd ,function-name ,@rest)
+	     (terminal-expression '(@ ,function-name ,@rest)))
+	   (terminal-expression '(@ ,function-name ,@rest))))))
 
 
 
@@ -209,73 +275,48 @@ get read and `INTERN'-ed on their proper packages."
 	 collect a))))
 
 (defun eval-clir-file (pathname)
-  (with-throwaway-package (:ir.rt) (:ir)
+  (with-throwaway-package (:ir.vc.core :ir.vc) (:ir)
     (with-open-file (clir-stream pathname)
       (loop for a = (read clir-stream nil)
 	 while a
 	 collect (eval a)))))
 
-(defun formula-of (body)
-  ;; Ideally this would be (macroexpand-1 body)
-  nil ;; No idea
-  )
 
-
-(defun clir-formula-to-string (formula)
-  (labels ((quantifier-decl-to-string (formula)
-	     (concatenate
-	      'string
-	      (symbol-name (first formula))
-	      " "
-	      (typed-var-decl-list-to-string (second formula))
-	      ". "
-	      (clir-formula-to-string (third formula))))
-	   (parentized (formula)
-	     (concatenate
-	      'string
-	      "("
-	      (clir-formula-to-string formula)
-	      ")")))
+;; (defun clir-formula-to-string (formula)
+;;   (labels ((quantifier-decl-to-string (formula)
+;; 	     (concatenate
+;; 	      'string
+;; 	      (symbol-name (first formula))
+;; 	      " "
+;; 	      (typed-var-decl-list-to-string (second formula))
+;; 	      ". "
+;; 	      (clir-formula-to-string (third formula))))
+;; 	   (parentized (formula)
+;; 	     (concatenate
+;; 	      'string
+;; 	      "("
+;; 	      (clir-formula-to-string formula)
+;; 	      ")")))
     
-    (if (symbolp formula)
-	(symbol-to-external-identifier formula)
-	(case (first formula)
-	  (:forall (quantifier-decl-to-string formula))
-	  (:exists (quantifier-decl-to-string formula))
-	  ('-> (concatenate 'string
-			    (parentized (second formula))
-			    " -> "
-			    (parentized (third formula))))
-	  ('<-> (concatenate 'string
-			     (parentized (second formula))
-			     " <-> "
-			     (parentized (third formula))))
-	  ('= ;; Elements are not formulas!
-	   (concatenate
-	    'string
-	    (clir-term-to-string (second formula))
-	    " = "
-	    (clir-term-to-string (third formula))))))))
-
-
-(defun verify-function (symbol)
-  (destructuring-bind (typed-lambda-list typed-result-list &rest body)
-      (cdr (assoc symbol *entry-points*))
-    (let ((precd (get-precondition body))
-	  (postcd (get-postcondition body)))
-      (verifier-output 'axiom precd)
-
-      (mapcar (lambda (param)
-		(let ((param-name (car param))
-		      (param-type (cadr param))))
-		(verifier-output 'constant param-name ': param-type))
-	      typed-lambda-list)
-
-      (with-empty-goal-set
-	  (with-new-goal
-	      (formula-of body)
-	    (implies postcd))))))
-
+;;     (if (symbolp formula)
+;; 	(symbol-to-external-identifier formula)
+;; 	(case (first formula)
+;; 	  (:forall (quantifier-decl-to-string formula))
+;; 	  (:exists (quantifier-decl-to-string formula))
+;; 	  ('-> (concatenate 'string
+;; 			    (parentized (second formula))
+;; 			    " -> "
+;; 			    (parentized (third formula))))
+;; 	  ('<-> (concatenate 'string
+;; 			     (parentized (second formula))
+;; 			     " <-> "
+;; 			     (parentized (third formula))))
+;; 	  ('= ;; Elements are not formulas!
+;; 	   (concatenate
+;; 	    'string
+;; 	    (clir-term-to-string (second formula))
+;; 	    " = "
+;; 	    (clir-term-to-string (third formula))))))))
 
 
 (setf *entry-points* nil)
@@ -283,20 +324,11 @@ get read and `INTERN'-ed on their proper packages."
 
 (cadr (load-file *test-file*))
 
-(eval-clir-file *test-file*)
+;; (eval-clir-file *test-file*)
 
-(setf *entry-points* (get-toplevel-definitions (load-file *test-file*)))
-
-
-(macroexpand (cadr (macroexpand-1 '(generate-goals))))
-
-;; VCGEN.RT.CORE:INT is unbound
-;; (macroexpand '(VCGEN.RT.CORE::GENERATE-GOAL CLIR.VC::test-define))
+;; (setf *entry-points* (get-toplevel-definitions (load-file *test-file*)))
 
 
-;; (eval (macroexpand-1 '(VCGEN.RT.CORE::GENERATE-GOAL CLIR.VC::test-define)))
 
-
-(values *entry-points*)
 
 
