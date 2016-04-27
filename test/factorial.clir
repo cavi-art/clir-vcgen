@@ -1,0 +1,49 @@
+(verification-unit "FACTORIAL"
+		   :sources (((:lang :clir)
+			      (:module :self)))
+		   :uses (:ir)
+		   :documentation "This is the factorial function on the CLIR.")
+
+(define fact ((n int)) ((result int))
+  (declare
+   (assertion
+    (precd (@ >= n 0))
+    (postcd (@ = result (@ fact n)))))
+  (cond n
+	((the int 0) 1)
+	(default
+	 (let ((n1 int)) (@ - n 1)
+	      (let ((f1 int)) (@ fact n1)
+		   (@ * n f1))))))
+
+;; We want to generate this
+'(:forall ((n int))
+  (->
+   (@ >= n 0)
+   (and
+    (-> (@ = n 0)
+	(@ = result 1)
+	(@ = result (@ fact n)))
+    (-> (@ <> n 0)
+	(:forall ((n1 int))
+		 (->
+		  (@ = n1 (@ - n 1))
+		  (:forall ((f1 int))
+			   (-> (@ = f1 (@ fact n1))
+			       (@ = result (@ * n f1))
+			       (@ = result (@ fact n))))))))))
+
+;; Which translates to this
+"forall (n:int). n <= 0
+  -> n >= 0 ->
+    (n =  0 -> result = 1 -> result = fact n) /
+    (n <> 0 -> forall (n1: int). n1 = n - 1 ->
+      forall (f1:int). f1 = fact n1 -> result = n * f1 ->
+      result = fact n
+    )"
+
+
+;; Local Variables:
+;; mode: common-lisp
+;; coding: utf-8
+;; End:
