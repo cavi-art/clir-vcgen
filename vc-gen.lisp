@@ -221,6 +221,43 @@ get read and `INTERN'-ed on their proper packages."
   )
 
 
+(defun clir-formula-to-string (formula)
+  (labels ((quantifier-decl-to-string (formula)
+	     (concatenate
+	      'string
+	      (symbol-name (first formula))
+	      " "
+	      (typed-var-decl-list-to-string (second formula))
+	      ". "
+	      (clir-formula-to-string (third formula))))
+	   (parentized (formula)
+	     (concatenate
+	      'string
+	      "("
+	      (clir-formula-to-string formula)
+	      ")")))
+    
+    (if (symbolp formula)
+	(symbol-to-external-identifier formula)
+	(case (first formula)
+	  (:forall (quantifier-decl-to-string formula))
+	  (:exists (quantifier-decl-to-string formula))
+	  ('-> (concatenate 'string
+			    (parentized (second formula))
+			    " -> "
+			    (parentized (third formula))))
+	  ('<-> (concatenate 'string
+			     (parentized (second formula))
+			     " <-> "
+			     (parentized (third formula))))
+	  ('= ;; Elements are not formulas!
+	   (concatenate
+	    'string
+	    (clir-term-to-string (second formula))
+	    " = "
+	    (clir-term-to-string (third formula))))))))
+
+
 (defun verify-function (symbol)
   (destructuring-bind (typed-lambda-list typed-result-list &rest body)
       (cdr (assoc symbol *entry-points*))
