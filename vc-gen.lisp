@@ -63,29 +63,21 @@
   (:export :*assume-verified* :*verify-only*)
 
   ;; Our own DSL keywords
-  (:export :assertion :define :lettype :letvar :letconst :let :let* :letfun :case "@" "@@"))
+  (:export :assertion :precd :postcd)
+  (:export :define :lettype :letvar :letconst :let :let* :letfun :case "@" "@@")
 
+  ;; Assertion comparators (will later be in another package)
+  (:shadowing-import-from :cl :=)
+  (:export :=))
 
 (defpackage :ir.vc.core.impl
   (:documentation "Functionality for generating Verification Conditions for later use in Why3")
   (:use :cl :ir.utils)
+  (:import-from :ir.vc.core :assertion :precd :postcd)
   (:export :verifier-identifier :verifier-output :verifier-output-comment *entry-points*
-	   :get-decls))
+	   :remove-decls))
 
 (in-package :ir.vc.core.impl)
-
-(defun get-decls (body &optional decls)
-  "Gets the `declare'-d and docstring forms (if there are any) of a
-defun-ish body"
-  (let ((form (car body)))
-    (if (or (and (listp form)
-		 (eq (car form)
-		     'declare))
-	    (stringp form))
-	(get-decls (cdr body)
-		   (cons form decls))
-	(values (reverse decls) body))))
-
 
 (defun get-toplevel-functions (clir)
   (loop
@@ -161,6 +153,17 @@ defun-ish body"
 (defvar *premise-list*)
 (defvar *variable-list*)
 (defvar *function-list*)
+
+(defun remove-decls (body &optional declarations)
+  "Gets the `declare'-d and docstring forms (if there are any) of a
+defun-ish body and the resulting body as values."
+  (declare (type list body declarations))
+  (let ((form (car body)))
+    (typecase form
+      ((or symbol nil) (values body (reverse declarations)))
+      (cons (if (eq (car form) 'declare)
+		(remove-decls (cdr body) (cons form declarations))
+		(values body (reverse declarations)))))))
 
 
 (defmacro with-empty-premise-list (&body body)
