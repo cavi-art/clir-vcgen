@@ -9,7 +9,7 @@
    (assertion
     (precd (@ >= n 0))
     (postcd (@ = result (@ fact n)))))
-  (cond n
+  (case n
 	((the int 0) 1)
 	(default
 	 (let ((n1 int)) (@ - n 1)
