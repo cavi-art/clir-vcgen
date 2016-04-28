@@ -6,11 +6,11 @@
 		   :documentation "This is a simple testfile for validating the CLIR rewriting rules.")
 
 
-(define test-define ((A int) (B bool)) ((test-define t))
+(define test-define ((A int) (B bool)) ((result int))
   (declare
    (assertion
     (precd true)
-    (postcd true)))
+    (postcd (@ = A result))))
   A)
 
 
