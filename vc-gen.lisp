@@ -106,15 +106,17 @@
 	    (apply #'format s forms))))
 
 
-(defun get-precondition (body)
-  (let* ((declarations (cdr (assoc 'declare body)))
+(defun get-precondition (function-definition)
+  (let* ((body (function-body function-definition))
+	 (declarations (cdr (assoc 'declare body)))
 	 (assertions (cdr (assoc 'assertion declarations)))
 	 (precd (assoc 'precd assertions)))
     (when precd
       (cadr precd))))
 
-(defun get-postcondition (body)
-  (let* ((declarations (cdr (assoc 'declare body)))
+(defun get-postcondition (function-definition)
+  (let* ((body (function-body function-definition))
+	 (declarations (cdr (assoc 'declare body)))
 	 (assertions (cdr (assoc 'assertion declarations)))
 	 (postcd (assoc 'postcd assertions)))
     (when postcd
@@ -150,9 +152,11 @@
 (deftype ir.vc.core:bool () '(cl:member true false))
 
 
-(defvar *premise-list*)
-(defvar *variable-list*)
-(defvar *function-list*)
+(defvar *premise-list* nil)
+(defvar *goal-set* nil)
+(defvar *variable-list* nil)
+(defvar *function-list* nil)
+(defvar *current-function* nil)
 
 (defun remove-decls (body &optional declarations)
   "Gets the `declare'-d and docstring forms (if there are any) of a
@@ -165,6 +169,23 @@ defun-ish body and the resulting body as values."
 		(remove-decls (cdr body) (cons form declarations))
 		(values body (reverse declarations)))))))
 
+;; TODO at some point, replace function "list" with a proper struct
+(defun function-body (function-definition)
+  (cdddr function-definition))
+
+(defun typed-lambda-list (function-definition)
+  "Gets the lambda list of a function definition. E.g., simple
+   accessor"
+  (second function-definition))
+
+(defun typed-result-list (function-definition)
+  "Gets the result list of a function definition. E.g., simple
+   accessor"
+  (third function-definition))
+
+(defun get-current-typed-result-list ()
+  (typed-result-list (assoc *current-function* *function-list*)))
+
 
 (defmacro with-empty-premise-list (&body body)
   `(let ((*premise-list* nil))
@@ -176,7 +197,9 @@ defun-ish body and the resulting body as values."
 
 (defmacro terminal-expression (expression &key type)
   "We have to do postcd/{result=expression}"
-  (@postcd *current-function* :result expression))
+  (declare (ignore type))
+  `(eval `(ir.vc.core:let ,(get-current-typed-result-list) ,',expression
+			  (output-goal (@postcd *current-function*)))))
 
 (defmacro with-variables (typed-variable-list &body body)
   "Introduces variables in the `premise-list' and `symbol-macrolet's
@@ -185,20 +208,60 @@ defun-ish body and the resulting body as values."
   (labels ((symbol-macroletize (typed-var)
 	     (destructuring-bind (var-name var-type) typed-var
 	       `(,var-name (terminal-expression ',var-name :type ,var-type)))))
-    `(let ((*premise-list* (append (list :forall typed-variable-list) *premise-list*)))
+    `(with-premise (list :forall ',typed-variable-list)
        (symbol-macrolet ,(mapcar #'symbol-macroletize typed-variable-list)
 	 ,@body))))
 
+(defmacro with-function-definition (new-definition &body body)
+  `(let ((*function-list* (cons ,new-definition *function-list*)))
+     ,@body))
+
+(defmacro with-current-function (function-name &body body)
+  `(let ((*current-function* ,function-name))
+     ,@body))
+
+
+(defun @precd (function-name function-args)
+  (let* ((f (assoc function-name *function-list*))
+	 (precd (get-precondition f))
+	 (parameter-list (typed-lambda-list f)))
+    (when precd
+      ;; Rename parameters
+      (rename-symbols precd parameter-list function-args))))
+
+(defun @postcd (function-name &optional function-args result-args)
+  (let* ((f (assoc function-name *function-list*))
+	 (postcd (get-postcondition f))
+	 (parameter-list (typed-lambda-list f))
+	 (result-list (typed-result-list f)))
+    (when postcd
+      ;; Rename lambda parameters and result parameters
+      (rename-symbols
+       (rename-symbols postcd parameter-list function-args)
+       result-list result-args))))
+
+
 (defun rename-symbols (formula original-symbols new-symbols)
-  ;; Simple s-exp tree walker
-  (typecase formula
-    (symbol (let ((p (position formula original-symbols)))
-	      (if p
-		  (nth p new-symbols)
-		  formula)))
-    (cons (rename-symbols (car formula) original-symbols new-symbols)
-	  (rename-symbols (cdr formula) original-symbols new-symbols))
-    (nil nil)))
+  (if (eq nil new-symbols)
+      formula
+      ;; Simple s-exp tree walker
+      (typecase formula
+	(nil nil)
+	(symbol (let ((p (position formula original-symbols)))
+		  (if p
+		      (nth p new-symbols)
+		      formula)))
+	(cons (rename-symbols (car formula) original-symbols new-symbols)
+	      (rename-symbols (cdr formula) original-symbols new-symbols)))))
+
+
+(remove-decls '((declare (assertion (precd true) (postcd true)))
+		(progn (hello world))))
+
+(defmacro with-goal-set (&body body)
+  `(let ((*goal-set* nil))
+     (let ((result (progn ,@body)))
+       *goal-set*)))
 
 (defmacro ir.vc.core:define (&whole definition
 			       function-name typed-lambda-list result-arg
@@ -209,21 +272,41 @@ defun-ish body and the resulting body as values."
   expression implies the postcondition. For the moment, a define is
   self-contained, meaning definitions inside cannot call another
   define."
-  (declare (ignorable result-arg))
-  `(defun ,function-name ()
-     (with-empty-premise-list
-       (with-variables ,typed-lambda-list
-	 (with-function-definition ',(cdr definition)
-	   (with-current-function ,function-name
-	     ,@full-body))))))
+  (declare (ignorable result-arg full-body))
+  (let ((body (remove-decls (function-body (cdr definition)))))
+    `(defun ,function-name ()
+       (with-goal-set
+	 (with-empty-premise-list
+	   (with-variables ,typed-lambda-list
+	     (with-function-definition ',(cdr definition)
+	       (with-current-function ',function-name
+		 ,@body))))))))
 
-(defun @precd (function-name &rest rest)
-  (let* ((f (assoc function-name *function-list*))
-	 (precd (get-precondition f))
-	 (parameter-list (get-typed-lambda-list f)))
-    (when precd
-      ;; Rename parameters
-      (rename-symbols precd parameter-list rest))))
+(defun drop-types (typed-var-list)
+  (mapcar #'car typed-var-list))
+
+(defmacro ir.vc.core:let (typed-var-list val &body body)
+  "Lexically binds a var, syntax is: (let var val body-form). It can
+destructure tuples as (let (a b) (list a b) a)"
+  (assert (not (cdr body))) ;; Only one expression
+  (if (and (= 1 (length typed-var-list))
+	   (= 2 (length (car typed-var-list))))
+      `(with-variables ,typed-var-list
+	 ,(when (and (consp val)
+		     (eq (car val)
+			 'ir.vc.core:@))
+		`(output-goal (@precd ,'(cadr val) ,'(cddr val))))
+	 (with-premise (list 'ir.vc.core:@ '= ',(car (drop-types typed-var-list)) ,val)
+	   ;; TODO Warning it only works for let with one element in lhs see `car' above
+	   ,(if (and (consp val)
+		     (eq (car val)
+			 'ir.vc.core:@))
+		`(with-premise (@postcd ,'(cadr val) ,'(cddr val) ',typed-var-list)
+		   ,@body)
+		`(progn
+		   ,@body))))
+      (or nil
+	  (error "This is not supported: ~S ~S" typed-var-list val))))
 
 (defmacro ir.vc.core:@ (function-name &rest rest)
   "We will use this macro to call all further functions. Depending
@@ -232,10 +315,10 @@ defun-ish body and the resulting body as values."
   function."
   (let ((precd (gensym))
 	(postcd (gensym)))
-    `(let ((,precd (@precd ,function-name ,@rest))
-	   (,postcd (@postcd ,function-name ,@rest)))
+    `(let ((,precd (@precd ,function-name ,rest))
+	   (,postcd (@postcd ,function-name ,rest (get-current-typed-result-list))))
        (if ,precd
-	   (output-goal (@precd ,function-name ,@rest))
+	   (output-goal (@precd ,function-name ,rest))
 	   (progn
 	     ;; Literally macroexpand the result of the function with our arguments
 	     (let ((sub-fun-body (rename-symbols (get-function-body function-name) ,@rest)))
@@ -243,11 +326,12 @@ defun-ish body and the resulting body as values."
 	     ))
 
        (if ,postcd
-	   (with-premise (@postcd ,function-name ,@rest)
+	   (with-premise ,postcd
 	     (terminal-expression '(@ ,function-name ,@rest)))
 	   (terminal-expression '(@ ,function-name ,@rest))))))
 
-
+(defun output-goal (target)
+  (push (list (reverse *premise-list*) target) *goal-set*))
 
 ;;;; End of grammar. 
 
@@ -327,11 +411,13 @@ get read and `INTERN'-ed on their proper packages."
 
 (cadr (load-file *test-file*))
 
-;; (eval-clir-file *test-file*)
+
+;; (simple::test-define)
+
+(eval-clir-file *test-file*)
+
 
 ;; (setf *entry-points* (get-toplevel-definitions (load-file *test-file*)))
-
-
 
 
 
