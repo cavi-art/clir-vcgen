@@ -285,6 +285,20 @@ defun-ish body and the resulting body as values."
 (defun drop-types (typed-var-list)
   (mapcar #'car typed-var-list))
 
+(defun case-alternative (alt)
+  (destructuring-bind (pattern form) alt
+    `(with-premise (list 'ir.vc.core:@ '= ,pattern case-condition))))
+
+(defmacro ir.vc.core:case (condition alternative-list)
+  "A `ir.vc.core:CASE' with n alternatives will generate n goals, one
+  per alternative, sequentially."
+  (let ((non-default-alternative-list (remove-if #'case-default-p alternative-list))
+	(default-alternative (remove-if-not #'case-default-p alternative-list)))
+    `(let ((case-condition ,condition))
+       ;; Treat case of funcall
+       ,@(mapcar #'case-alternative non-default-alternative-list)
+       ,(case-alternative-default default-alternative alternative-list))))
+
 (defmacro ir.vc.core:let (typed-var-list val &body body)
   "Lexically binds a var, syntax is: (let var val body-form). It can
 destructure tuples as (let (a b) (list a b) a)"
@@ -407,15 +421,15 @@ get read and `INTERN'-ed on their proper packages."
 
 
 (setf *entry-points* nil)
-(defparameter *test-file* "test/simple.clir")
+
+(defparameter *test-file* "test/factorial.clir")
 
 (cadr (load-file *test-file*))
 
 
-;; (simple::test-define)
-
 (eval-clir-file *test-file*)
 
+(factorial::fact)
 
 ;; (setf *entry-points* (get-toplevel-definitions (load-file *test-file*)))
 
