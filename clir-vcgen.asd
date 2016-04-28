@@ -4,6 +4,6 @@
   :author "Santiago Saavedra <s.saavedra@fdi.ucm.es>"
   :licence "AGPL3"
   :components ((:file "runtime/cl-reexport")
-	       (:file "runtime/utils" :depends-on ("cl-reexport"))
+	       (:file "runtime/utils" :depends-on ("runtime/cl-reexport"))
 	       (:file "vc-gen" :depends-on ("runtime/utils"))))
 
