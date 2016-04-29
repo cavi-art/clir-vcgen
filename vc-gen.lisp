@@ -38,6 +38,9 @@
   (:documentation "Verification conditions package. Defines no symbols
   a priori, but will later export those of core."))
 
+;; (delete-package :ir.vc.core)
+;; (delete-package :ir.vc.core.impl)
+
 (defpackage :ir.vc.core
   (:use)
 
@@ -50,7 +53,6 @@
   (:export :and :or)
 
   ;; We can use the same `the' and `type' as CL.
-  (:import-from :cl :the :type)
   (:export :the :type)
 
   ;; Our basic macro for defining everything else.
@@ -64,7 +66,7 @@
 
   ;; Our own DSL keywords
   (:export :assertion :precd :postcd)
-  (:export :define :lettype :letvar :letconst :let :let* :letfun :case "@" "@@")
+  (:export :define :lettype :letvar :letconst :let :let* :letfun :case :default "@" "@@")
 
   ;; Assertion comparators (will later be in another package)
   (:shadowing-import-from :cl :=)
@@ -73,7 +75,7 @@
 (defpackage :ir.vc.core.impl
   (:documentation "Functionality for generating Verification Conditions for later use in Why3")
   (:use :cl :ir.utils)
-  (:import-from :ir.vc.core :assertion :precd :postcd)
+  (:import-from :ir.vc.core :assertion :precd :postcd :default)
   (:export :verifier-identifier :verifier-output :verifier-output-comment *entry-points*
 	   :remove-decls))
 
@@ -101,7 +103,7 @@
 
 
 (defun verifier-output-comment (&rest forms)
-  (format t "(* ~s *)~%"
+  (format t " (* ~s *)~%"
 	  (with-output-to-string (s)
 	    (apply #'format s forms))))
 
@@ -139,7 +141,8 @@
 	    (in-package ,pkg)
 	    (cl:mapcar (cl:lambda (f) (cl:push f ir.vc.core:*assume-verified*)) ,assume-verified)
 	    (cl:mapcar (cl:lambda (f) (cl:push f ir.vc.core:*verify-only*)) ,verify-only)
-	    (verifier-output-comment "Parsing units in package ~a~%" ,package-id))))
+	    ;; (verifier-output-comment "Parsing units in package ~a~%" ,package-id)
+	    )))
 
 
 (defmacro ir.vc.core:lettype (type-symbol param-list type-boolean-expression optional-data)
@@ -263,6 +266,30 @@ defun-ish body and the resulting body as values."
      (let ((result (progn ,@body)))
        *goal-set*)))
 
+(defmacro maybe-output-precd-goal (form)
+  (when (consp form)
+    (format t "Our form is ~S consp? ~S car? ~S eq? ~S" form (consp form) (car form) (eq (car form) 'ir.vc.core:@)))
+  (unless (consp form)
+    (format t "We do not have a precondition for ~S~%" form))
+  (when (and (consp form)
+	     (eq (car form)
+		 'ir.vc.core:@))
+    `(output-goal (@precd ,'(cadr form) ,'(cddr form)))))
+
+(defmacro assume-binding (lhs form &body body)
+  (if lhs
+      `(with-premise (list 'ir.vc.core:@ '= ',lhs ,form)
+	 (assume-binding nil form ,@body))
+
+      (if (and (consp form)
+	       (eq (car form)
+		   'ir.vc.core:@))
+	  `(with-premise (@postcd ,'(cadr form) ,'(cddr form) ',lhs)
+	     ,@body)
+	  `(progn
+	     ,@body))))
+
+
 (defmacro ir.vc.core:define (&whole definition
 			       function-name typed-lambda-list result-arg
 			     &body full-body)
@@ -285,19 +312,48 @@ defun-ish body and the resulting body as values."
 (defun drop-types (typed-var-list)
   (mapcar #'car typed-var-list))
 
-(defun case-alternative (alt)
-  (destructuring-bind (pattern form) alt
-    `(with-premise (list 'ir.vc.core:@ '= ,pattern case-condition))))
+(defun drop-types-from-case-pattern (pattern)
+  (typecase pattern
+    (symbol pattern)
+    (cons (case (car pattern)
+	    (ir.vc.core:the (third pattern))
+	    (ir.vc.core:@ pattern)
+	    ;; Unmatched case TUPLE
+	    ))))
 
-(defmacro ir.vc.core:case (condition alternative-list)
+(defun case-alternative (case-condition)
+  (lambda (alt)
+    (destructuring-bind (pattern form) alt
+      (format t "We are destructuring form which is ~S\n" form)
+      `(assume-binding ,(drop-types-from-case-pattern pattern) ,case-condition
+	 ,form))))
+
+(defun case-default-p (alt)
+  (eq (car alt)
+      'default))
+
+(defun case-alternative-default (condition default-alternative alternative-list)
+  (if alternative-list
+      (let ((pattern (caar alternative-list)))
+	`(with-premise (list 'ir.vc.core.@ '<> ',pattern ,condition)
+	   ,(case-alternative-default condition default-alternative (cdr alternative-list))))
+      (let ((default-body (second default-alternative)))
+	default-body)))
+
+(defmacro ir.vc.core:case (condition &body alternative-list)
   "A `ir.vc.core:CASE' with n alternatives will generate n goals, one
   per alternative, sequentially."
   (let ((non-default-alternative-list (remove-if #'case-default-p alternative-list))
 	(default-alternative (remove-if-not #'case-default-p alternative-list)))
+    (assert (eq nil (cdr default-alternative)))
     `(let ((case-condition ,condition))
-       ;; Treat case of funcall
-       ,@(mapcar #'case-alternative non-default-alternative-list)
-       ,(case-alternative-default default-alternative alternative-list))))
+       (maybe-output-precd-goal ,condition)
+       ,@(mapcar (case-alternative condition) non-default-alternative-list)
+       ,(case-alternative-default condition (car default-alternative) alternative-list))))
+
+
+(defmacro ir.vc.core:the (expr-type value)
+  `(terminal-expression ,value :type ,expr-type))
 
 (defmacro ir.vc.core:let (typed-var-list val &body body)
   "Lexically binds a var, syntax is: (let var val body-form). It can
@@ -306,19 +362,10 @@ destructure tuples as (let (a b) (list a b) a)"
   (if (and (= 1 (length typed-var-list))
 	   (= 2 (length (car typed-var-list))))
       `(with-variables ,typed-var-list
-	 ,(when (and (consp val)
-		     (eq (car val)
-			 'ir.vc.core:@))
-		`(output-goal (@precd ,'(cadr val) ,'(cddr val))))
-	 (with-premise (list 'ir.vc.core:@ '= ',(car (drop-types typed-var-list)) ,val)
+	 (maybe-output-precd-goal ,val)
+	 (assume-binding ,(car (drop-types typed-var-list)) ,val
 	   ;; TODO Warning it only works for let with one element in lhs see `car' above
-	   ,(if (and (consp val)
-		     (eq (car val)
-			 'ir.vc.core:@))
-		`(with-premise (@postcd ,'(cadr val) ,'(cddr val) ',typed-var-list)
-		   ,@body)
-		`(progn
-		   ,@body))))
+	   ,@body))
       (or nil
 	  (error "This is not supported: ~S ~S" typed-var-list val))))
 
@@ -422,14 +469,17 @@ get read and `INTERN'-ed on their proper packages."
 
 (setf *entry-points* nil)
 
-(defparameter *test-file* "test/factorial.clir")
+(defparameter *test-file* "test/simple.clir")
 
 (cadr (load-file *test-file*))
 
+;; (eval-clir-file *test-file*)
 
-(eval-clir-file *test-file*)
+(simple::test-define)
 
-(factorial::fact)
+
+;; (factorial::fact)
+
 
 ;; (setf *entry-points* (get-toplevel-definitions (load-file *test-file*)))
 
