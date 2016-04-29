@@ -1,0 +1,3 @@
+#!/bin/sh
+
+exec copyright-header --license AGPL3 --copyright-software CAVIART-VCGEN --copyright-software-description "A verification condition generator for the CAVI-ART project developed originally at GPD UCM." --copyright-year 2016 --copyright-holder "Santiago Saavedra López" --copyright-holder "Grupo de Programación Declarativa - Universidad Complutense de Madrid" -a . --output-dir .

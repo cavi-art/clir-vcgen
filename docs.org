@@ -1,0 +1,101 @@
+#+TITLE: Thoughts
+#+AUTHOR: Santiago Saavedra
+#+EMAIL: s.saavedra@fdi.ucm.es
+#+OPTIONS: ':nil *:t -:t ::t <:t H:3 \n:nil ^:t arch:headline
+#+OPTIONS: author:t c:nil creator:nil d:(not "LOGBOOK") date:t e:t
+#+OPTIONS: email:nil f:t inline:t num:t p:nil pri:nil prop:nil stat:t
+#+OPTIONS: tags:t tasks:t tex:t timestamp:t title:t toc:t todo:t |:t
+#+LANGUAGE: en
+#+SELECT_TAGS: export
+#+EXCLUDE_TAGS: noexport
+#+CREATOR: Emacs 24.5.1 (Org mode 8.3.3)
+
+* Algorithm V
+
+  Algorithm V is for generating Verification Conditions.
+
+  Input: function definition f[fn:: From ~define~ or ~letfun~ ],
+  lexical-scope[fn:: Maybe as a dynamic variable, depending on ease of
+  stacking]
+
+  Output: Logical IR goal set, suitable to transformation as per
+  ~clir-goals-to-string~.
+
+** Steps
+
+   1. Set empty premise list
+   2. Forall-introduce arguments of $f$ s.t. precondition as a premise
+   3. Use algorithm 4 on the definition's AST with: $f$, lexical-scope
+      and the premises.
+   4. Return the goal set given by algorithm 4
+
+* Algorithm 4
+
+  Algorithm 4 is for generating a verification condition of a general
+  AST (not a function definition)
+
+  Input: current function, lexical scope, premises
+
+  Output: Logical IR goal set, suitable to transformation as per
+  ~clir-goals-to-string~.
+
+** Steps
+
+   1. Set new goal set set
+   2. If the AST node is annotated with a precondition:
+      1. Add goal to goal set: premise -> (funcall-precd ,@AST-node)
+      2. Append to premise: (funcall-precd ,@AST-node) ->
+         (funcall-postcd ,@AST-node)
+   3. If the AST node is an atomic expression [fn:: This means it is
+      the last expression of this tree]
+      1. Retrieve (funcall-postcd current-function atomic-expression)
+         as \phi
+      2. Add goal to goal set: premise -> \phi
+
+** funcall-postcd / funcall-precd
+   Are functions which take a function and an atomic expression (tuple
+   or otherwise) and matches it with the function's return value(s) in
+   a way that the postcondition can be rewritten in terms of the given
+   atomic expression, so that it can effectively be used as the
+   postcondition of the actual function call.
+
+
+* Old Algorithm V1						   :noexport:
+
+  Algorithm V is for generating Verification Conditions.
+
+  Input: function definition [fn:: From ~define~ or ~letfun~ ], lexical-scope [fn:: Maybe as a dynamic variable, depending on ease of stacking]
+
+  Output: Logical IR formula, suitable to transformation as per ~clir-formula-to-string~.
+
+** Steps
+
+   1. Set empty clause list
+   2. Forall-introduce arguments of function as a clause
+   3. Introduce the precondition as a clause
+   4. Use <<algorithm 4>> on term to transform it into a list of clauses
+      1. If the term is a ~let~
+	 1. Forall-introduce variables on the let as a clause
+	 2. Introduce a clause (= (let-lhs) (let-rhs))
+	 3. If (let-rhs) is a function call:
+	    1. Replace parameters with actual arguments in precond
+	    2. Append modified precond to the list of clauses
+      2. If the term is a ~letfun~
+	 1. Introduce function definitions into the scope (for pre/post condition fetching on usage)
+	 2. Use [[algorithm 4]] on the ~letfun~ expression
+      3. If the term is a ~case~
+	 1. We don't know yet
+	    @@latex: \\\\\\\\\\\\@@
+      4. If the term is a ~function call~
+	 1. If the function call has a precondition:
+	    1. We don't know yet
+	       @@latex: \\\\\\\\\\\\@@
+	 2. Else:
+	    1. We follow the function definition as a recursive call to [[Algorithm V]]
+	 3. If the function call has a postcondition:
+	    1. We don't know yet
+               @@latex: \\\\\\\\\\\\@@
+	 4. Else:
+	    1. We needn't do anything, unfortunately we cannot assume anything more.
+      5. If the term is a ~constructor application~, a ~tuple~, or an ~atom~:
+	 1. We need to somehow match this to the postcondition of our current context
