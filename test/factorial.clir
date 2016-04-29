@@ -10,9 +10,9 @@
     (precd (@ >= n 0))
     (postcd (@ = result (@ fact n)))))
   (case n
-	((the int 0) 1)
+	((the int 0) (the int 1))
 	(default
-	 (let ((n1 int)) (@ - n 1)
+	 (let ((n1 int)) (@ - n (the int 1))
 	      (let ((f1 int)) (@ fact n1)
 		   (@ * n f1))))))
 
