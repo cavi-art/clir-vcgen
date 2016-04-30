@@ -3,7 +3,7 @@
   :version "0.0.1"
   :author "Santiago Saavedra <s.saavedra@fdi.ucm.es>"
   :licence "AGPL3"
-  :components ((:file "runtime/cl-reexport")
-	       (:file "runtime/utils" :depends-on ("runtime/cl-reexport"))
-	       (:file "vc-gen" :depends-on ("runtime/utils"))))
+  :components ((:file "../cl-reexport")
+	       (:file "../utils" :depends-on ("../cl-reexport"))
+	       (:file "vc-gen" :depends-on ("../utils"))))
 

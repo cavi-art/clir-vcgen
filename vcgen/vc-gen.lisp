@@ -274,12 +274,12 @@ defun-ish body and the resulting body as values."
   (when (and (consp form)
 	     (eq (car form)
 		 'ir.vc.core:@))
-    `(output-goal (@precd ,'(cadr form) ,'(cddr form)))))
+    `(output-goal (@precd ',(cadr form) ',(cddr form)))))
 
 (defmacro assume-binding (lhs form &body body)
   (if lhs
       `(with-premise (list 'ir.vc.core:@ '= ',lhs ,form)
-	 (assume-binding nil form ,@body))
+	 (assume-binding nil ,form ,@body))
 
       (if (and (consp form)
 	       (eq (car form)
@@ -324,7 +324,6 @@ defun-ish body and the resulting body as values."
 (defun case-alternative (case-condition)
   (lambda (alt)
     (destructuring-bind (pattern form) alt
-      (format t "We are destructuring form which is ~S\n" form)
       `(assume-binding ,(drop-types-from-case-pattern pattern) ,case-condition
 	 ,form))))
 
@@ -335,7 +334,7 @@ defun-ish body and the resulting body as values."
 (defun case-alternative-default (condition default-alternative alternative-list)
   (if alternative-list
       (let ((pattern (caar alternative-list)))
-	`(with-premise (list 'ir.vc.core.@ '<> ',pattern ,condition)
+	`(with-premise (list 'ir.vc.core.@ '<> ',(drop-types-from-case-pattern pattern) ,condition)
 	   ,(case-alternative-default condition default-alternative (cdr alternative-list))))
       (let ((default-body (second default-alternative)))
 	default-body)))
@@ -469,17 +468,18 @@ get read and `INTERN'-ed on their proper packages."
 
 (setf *entry-points* nil)
 
-(defparameter *test-file* "test/simple.clir")
+(defparameter *test-file* "../test/factorial.clir")
 
 (cadr (load-file *test-file*))
 
-;; (eval-clir-file *test-file*)
-
-(simple::test-define)
 
 
 ;; (factorial::fact)
 
+
+;; (eval-clir-file *test-file*)
+
+;; (simple::test-define)
 
 ;; (setf *entry-points* (get-toplevel-definitions (load-file *test-file*)))
 
