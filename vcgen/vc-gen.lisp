@@ -254,8 +254,8 @@ defun-ish body and the resulting body as values."
 		  (if p
 		      (nth p new-symbols)
 		      formula)))
-	(cons (rename-symbols (car formula) original-symbols new-symbols)
-	      (rename-symbols (cdr formula) original-symbols new-symbols)))))
+	(cons (cons (rename-symbols (car formula) original-symbols new-symbols)
+		    (rename-symbols (cdr formula) original-symbols new-symbols))))))
 
 
 (remove-decls '((declare (assertion (precd true) (postcd true)))
