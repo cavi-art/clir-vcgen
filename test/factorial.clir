@@ -4,11 +4,18 @@
 		   :uses (:ir)
 		   :documentation "This is the factorial function on the CLIR.")
 
+(define const () ((result int))
+  (declare
+   (assertion
+    (precd true)
+    (postcd (@ = result 1))))
+  (the int 1))
+
 (define fact ((n int)) ((result int))
   (declare
    (assertion
     (precd (@ >= n 0))
-    (postcd (@ = result (@ fact n)))))
+    (postcd (@ = result (@ factorial n)))))
   (case n
 	((the int 0) (the int 1))
 	(default
