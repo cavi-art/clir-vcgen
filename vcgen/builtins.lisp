@@ -23,12 +23,13 @@
 
 (declaim (optimize debug))
 
-(defpackage :ir.rt.builtins
-  (:use :ir.rt.core :common-lisp)
-  (:shadow + - * / < <= > >= 1+ 1-)
-  (:export + - * / < <= > >= 1+ 1-)
+(defpackage :ir.vc.builtins
+  (:use :ir.vc.core :common-lisp)
+  (:shadow + - * / < <= > >=)
+  (:export + - * / < <= > >= =)
 
   (:shadowing-import-from :common-lisp :let :let* :case :load)
+  (:shadowing-import-from :common-lisp :type :the)
 
   ;; Export generalized boolean constants
   (:export :t :nil)
@@ -37,12 +38,35 @@
   (:export :format)
 
   ;; Export types
+  (:export #:int #:bool)
+  (:export #:true #:false)
+  
   (:export :fixnum :number :real :float)
 
   ;; Export simulated heap and array
-  (:export :assertion :defun-with-assertion)
   (:export :heap :heap-p :loc :new-heap :sel-heap :mod-heap :newptr-in-heap)
   (:export :sel-array :mod-array :sel-array-heap
 	   :mod-array-heap :len-array-heap))
 
+(in-package :ir.vc.builtins)
+
+(deftype ir.vc.builtins:int () `(cl:integer ,cl:most-negative-fixnum ,cl:most-positive-fixnum))
+(deftype ir.vc.builtins:bool () '(cl:member true false))
+
+(macrolet ((boolean-external-op (opname)
+	     `(pushnew '(,opname ((a int) (b int)) ((r int))
+		      (declare (assertion
+				(precd true)
+				(postcd (@ = r (@ ,opname a b)))))
+		      (error "Opaque term already verified."))
+		    ir.vc.core:*external-functions*)))
+  (boolean-external-op +)
+  (boolean-external-op -)
+  (boolean-external-op *)
+  (boolean-external-op /)
+  (boolean-external-op <)
+  (boolean-external-op <=)
+  (boolean-external-op =)
+  (boolean-external-op >)
+  (boolean-external-op >=))
 
