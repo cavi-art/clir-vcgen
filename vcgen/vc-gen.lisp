@@ -103,7 +103,7 @@
 
 
 (defun verifier-output-comment (&rest forms)
-  (format t " (* ~s *)~%"
+  (format nil " (* ~s *)~%"
 	  (with-output-to-string (s)
 	    (apply #'format s forms))))
 
@@ -198,12 +198,15 @@ defun-ish body and the resulting body as values."
 	 ,@body)
       `(progn ,@body)))
 
-(defmacro terminal-expression (expression &key type)
+(defmacro terminal-expression (expression &key type norename)
   "We have to do postcd/{result=expression}"
   (declare (ignore type))
-  `(output-goal (rename-symbols (@postcd *current-function*)
-				(drop-types (get-current-typed-result-list))
-				',expression)))
+  (if norename
+      `(output-goal (@postcd *current-function*))
+      `(output-goal (rename-symbols (@postcd *current-function*)
+				    (drop-types (get-current-typed-result-list))
+				    ',expression))))
+
 
 (defmacro with-variables (typed-variable-list &body body)
   "Introduces variables in the `premise-list' and `symbol-macrolet's
@@ -260,7 +263,7 @@ defun-ish body and the resulting body as values."
 
 (defun rename-symbols (formula original-symbols new-symbols &optional rec)
   (unless (or (not new-symbols) rec)
-    (format t "Renaming ~S from ~s in terms of ~s~%" formula original-symbols new-symbols))
+    (format t ";; Renaming ~S from ~s in terms of ~s~%" formula original-symbols new-symbols))
   (if (eq nil new-symbols)
       formula
       ;; Simple s-exp tree walker
@@ -286,17 +289,17 @@ defun-ish body and the resulting body as values."
        (eq 'ir.vc.core:@
 	   (car form))))
 
-(defmacro expr-postcondition (form &optional results)
+(defun expr-postcondition (form &optional results)
   "Gets the postcondition of an expression, if that expression is a
   funcall. If it is not, it returns NIL (which is a suitable return
   value for `with-premise')."
   (when (@-p form)
-    `(@postcd ',(cadr form) ',(cddr form) ',results)))
+    (@postcd (cadr form) (cddr form) results)))
 
 (defmacro assume-binding (lhs form &body body)
   (if lhs
       `(with-premise (list 'ir.vc.core:@ '= ',lhs ',form)
-	 (with-premise (expr-postcondition ',form ,lhs)
+	 (with-premise (expr-postcondition ',form '(,lhs))
 	   ,@body))))
 
 
@@ -390,18 +393,19 @@ defun-ish body and the resulting body as values."
   on whether they already have pre/post conditions on them, we will
   terminate the goal or pursue further by interpreting the next
   function."
-  (let ((precd (gensym))
-	(postcd (gensym)))
-    `(let ((,precd (@precd ',function-name ',rest))
-	   (,postcd (@postcd ',function-name ',rest (drop-types (get-current-typed-result-list)))))
+  (let ((precd `(@precd ',function-name ',rest))
+	(postcd `(@postcd ',function-name ',rest (drop-types (get-current-typed-result-list)))))
+    `(progn
        (output-goal ,precd)
 
        (with-premise ,precd
 	 (macrolet ((ir.vc.core:the (type value) (declare (ignore type)) value))
-	   (if ,postcd
-	       (with-premise ,postcd
-		 (terminal-expression ((ir.vc.core:@ ,function-name ,@(mapcar #'macroexpand-1 rest)))))
-	       (terminal-expression ((ir.vc.core:@ ,function-name ,@(mapcar #'macroexpand-1 rest))))))))))
+	   (with-premise (list :forall (get-current-typed-result-list))
+	     (if ,postcd
+		 (with-premise ,postcd
+		   (format t "Assuming postcd = ~S for function ~S" ,postcd ',function-name)
+		   (terminal-expression ((ir.vc.core:@ ,function-name ,@(mapcar #'macroexpand-1 rest))) :norename t))
+		 (terminal-expression ((ir.vc.core:@ ,function-name ,@(mapcar #'macroexpand-1 rest))) :norename t))))))))
 
 (defun output-goal (target)
   (when (not (eq target 'true))
@@ -440,7 +444,7 @@ defun-ish body and the resulting body as values."
       (cons (case (car formula)
 	      (:forall (format nil "forall ~:{(~A:~A)~:^,~}. " (second formula)))
 	      (the_postcd_placeholder_for (format nil "POSTCD[~A]" (rest formula)))
-	      (the_precd_placeholder_for "true")
+	      (the_precd_placeholder_for "(*<*)true(*>*)")
 	      (ir.vc.core:@ (apply-predicate (rest formula)))
 	      (t (error "Formula ~S not understood. (car=~S)" formula (car formula)))))
       (t (error "Formula ~S not understood." formula)))))
@@ -500,36 +504,18 @@ get read and `INTERN'-ed on their proper packages."
 (defparameter *test-file* "../test/factorial.clir")
 
 
-(caddr (load-file *test-file*))
+;; (caddr (load-file *test-file*))
 
-;; (IR.VC.CORE:DEFINE FACTORIAL::FACT
-;;     ((FACTORIAL::N IR.VC.CORE:INT))
-;;     ((FACTORIAL::RESULT IR.VC.CORE:INT))
-;;   (DECLARE
-;;    (ASSERTION (PRECD (IR.VC.CORE:@ IR.VC.BUILTINS:>= FACTORIAL::N 0))
-;;     (POSTCD
-;;      (IR.VC.CORE:@ = FACTORIAL::RESULT
-;;                    (IR.VC.CORE:@ FACTORIAL::FACTORIAL FACTORIAL::N)))))
-;;   (IR.VC.CORE:CASE FACTORIAL::N
-;;     ((IR.VC.CORE:THE IR.VC.CORE:INT 0) (IR.VC.CORE:THE IR.VC.CORE:INT 1))
-;;     (DEFAULT
-;;      (IR.VC.CORE:LET ((FACTORIAL::N1 IR.VC.CORE:INT))
-;;          (IR.VC.CORE:@ IR.VC.BUILTINS:- FACTORIAL::N
-;;                        (IR.VC.CORE:THE IR.VC.CORE:INT 1))
-;;        (IR.VC.CORE:LET ((FACTORIAL::F1 IR.VC.CORE:INT))
-;;            (IR.VC.CORE:@ FACTORIAL::FACT FACTORIAL::N1)
-;;          (IR.VC.CORE:@ IR.VC.BUILTINS:* FACTORIAL::N FACTORIAL::F1))))))
+(eval-clir-file *test-file*)
 
-;; (multiple-value-bind (a b) (factorial::fact)
-;;   (values
-;;    (mapcar #'clir-goal-to-string a)
-;;    (length a)))
+(multiple-value-bind (a b) (factorial::fact)
+  (values
+   (mapcar #'clir-goal-to-string a)
+   (length a)))
 
 
 
 (setf *goal-set* nil)
-
-;; (eval-clir-file *test-file*)
 
 ;; (simple::test-define)
 
