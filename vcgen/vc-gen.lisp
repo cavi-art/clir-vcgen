@@ -327,6 +327,11 @@ defun-ish body and the resulting body as values."
 		     (@precd ',function-name ',(drop-types typed-lambda-list))
 		   ,@body)))))))))
 
+(defmacro ir.vc.core:letfun (&whole definition
+			       function-name typed-lambda-list result-arg
+			     &body full-body)
+  )
+
 (defun drop-types (typed-var-list)
   (mapcar #'car typed-var-list))
 
@@ -451,7 +456,7 @@ defun-ish body and the resulting body as values."
       (string formula)
       (number formula)
       (cons (case (car formula)
-	      (:forall (format nil "forall ~:{(~A:~A)~:^,~}. " (second formula)))
+	      (:forall (format nil "forall ~:{~A:~A~:^,~}. " (second formula)))
 	      (the_postcd_placeholder_for (format nil "POSTCD[~A]" (rest formula)))
 	      (the_precd_placeholder_for "(*<*)true(*>*)")
 	      (ir.vc.core:@ (apply-predicate (rest formula)))
@@ -514,17 +519,37 @@ get read and `INTERN'-ed on their proper packages."
 
 (setf *entry-points* nil)
 
-(defparameter *test-file* "../test/factorial.clir")
+(defparameter *test-file* (pathname "../test/factorial.clir"))
+(defparameter *clir-extension* ".clir")
+(defparameter *prover-extension* ".why")
+
+(defun prover-file-from-clir (path)
+  (let* ((name (pathname-name path))
+	 (basename (subseq name 0 (find #\. name :from-end t))))
+    (merge-pathnames
+     (make-pathname :directory (pathname-directory path) :type :unspecific)
+     (make-pathname :name (concatenate 'string basename *prover-extension*) :type :unspecific))))
 
 ;; (caddr (load-file *test-file*))
 
-(eval-clir-file *test-file*)
+(defun generate-theory (clir-file f)
+  "f is a lambda taking zero arguments which returns the goals. It
+  should be something like (lambda () (factorial::factorial))."
+  ;; TODO Use real imports
+  (eval-clir-file clir-file)
+  (let* ((prover-file (prover-file-from-clir clir-file))
+	 (goals (mapcar #'clir-goal-to-string (funcall f))))
+    (delete-file prover-file)
+    (with-open-file (stream prover-file :direction :output)
+      (format stream "theory UntitledTheory ~% use import int.Int~% use import int.Fact~%~{~A~^~%~} ~%~%end~%" goals))))
 
-(let ((a (factorial::fact)))
-  (values
-   (mapcar #'clir-goal-to-string a)
-   (length a)))
+(defun test-clir (clir-file f)
+  (generate-theory clir-file f)
+  (let ((prover-file (prover-file-from-clir clir-file)))
+    (asdf::run-program (list "why3" "ide" (namestring prover-file)))))
 
+
+(test-clir (pathname "../test/factorial.clir") (lambda () (factorial::factorial)))
 
 
 (setf *goal-set* nil)
