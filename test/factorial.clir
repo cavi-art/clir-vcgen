@@ -11,16 +11,16 @@
     (postcd (@ = result 1))))
   (the int 1))
 
-(define fact ((n int)) ((result int))
+(define factorial ((n int)) ((result int))
   (declare
    (assertion
     (precd (@ >= n 0))
-    (postcd (@ = result (@ factorial n)))))
+    (postcd (@ = result (@ fact n)))))
   (case n
 	((the int 0) (the int 1))
 	(default
 	 (let ((n1 int)) (@ - n (the int 1))
-	      (let ((f1 int)) (@ fact n1)
+	      (let ((f1 int)) (@ factorial n1)
 		   (@ * n f1))))))
 
 ;; We want to generate this
