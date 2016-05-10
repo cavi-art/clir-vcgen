@@ -1,0 +1,34 @@
+(verification-unit "QSORT"
+		   :sources (((:lang :clir)
+			      (:module :self)))
+		   :uses (:ir)
+		   :documentation "This is the quicksort function on the CLIR.")
+
+
+(define quicksort ((v (array int))) ((vres (array int)))
+  (letfun
+      ((qsort ((v (array int)) (i int) (j int)) ((vsort (array int)))
+	 (declare
+	  (assertion
+	   (precd (@ <= 0 i (@ + 1 j) (@ length v)))
+	   (postcd (and (@ sorted vsort i j)
+			(@ permut v vsort i j)))))
+	 (let ((b int)) (@ <= i j)
+	      (case b
+		((the bool true) (@ f1 v i j))
+		((the bool false) v))))
+       (f1 ((v (array int)) (i int) (j int)) ((result (array int)))
+	 (let ((v1 (array int)) (p int)) (@ partition v i j)
+	      (let ((p1 int)) (@ - p (the int 1))
+		   (let ((v2 (array int))) (@ qsort v1 i p1)
+			(let ((p2 int)) (@ + p (the int 1))
+			     (@ qsort v2 p2 j)))))))
+    (let ((n int)) (@ length v)
+	 (let ((n1 int)) (@ - n (the int 1))
+	      (@ qsort v (the int 0) n1)))))
+
+
+;; Local Variables:
+;; mode: common-lisp
+;; coding: utf-8
+;; End:
