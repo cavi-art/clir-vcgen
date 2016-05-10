@@ -28,9 +28,9 @@
   (declare
    (assertion
     (precd true)
-    (postcd (:forall (E (array int))
-		     (-> (= E (deref inssort V))
-			 (sorted E))))))
+    (postcd (:forall ((E (array int)))
+		     (-> (@ = E (@ deref inssort V))
+			 (@ sorted E))))))
   (letfun
       ((f1 ((V (loc (array int))) (H heap)) ((_ heap))
 	 (let ((I int)) (the int 0)
@@ -40,12 +40,12 @@
 	 (declare
 	  (assertion
 	   (precd (:forall ((E (array int)))
-			   (-> (= (deref H V) E)
-			       (and (sorted_sub E 0 I)
+			   (-> (@ = (@ deref H V) E)
+			       (and (@ sorted_sub E 0 I)
 				    (<= 0 I)))))
 	   (postcd (:forall ((E (array int)))
-			    (-> (= (deref f2 V) E)
-				(sorted E))))))
+			    (-> (@ = (@ deref f2 V) E)
+				(@ sorted E))))))
 	 (let ((X1 int)) (@ len-array-heap H V)
 	   (let ((B bool)) (@ < I X1)
 	     (case B
@@ -60,12 +60,12 @@
 	 (declare
 	  (assertion
 	   (precd (:forall ((E (array int)))
-			   (-> (= (deref H V) E)
-			       (and (sorted_sub E 0 (+ J 1))
-				    (sorted_sub E (+ J 1) (+ I 1))
-				    (<= -1 J)
-				    (<= (sel-array E (- J 1))
-					(sel-array E (+ J 1)))))))))
+			   (-> (@ = (@ deref H V) E)
+			       (and (@ sorted_sub E 0 (@ + J 1))
+				    (@ sorted_sub E (@ + J 1) (@ + I 1))
+				    (@ <= -1 J)
+				    (@ <= (@ sel-array E (@ - J 1))
+					(@ sel-array E (@ + J 1)))))))))
 	 (let ((B1 bool)) (@ >= J (the int 0))
 	   (case B1
 	     ((the bool false) (@ f6 V I H))
