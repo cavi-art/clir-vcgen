@@ -75,7 +75,7 @@
 (defpackage :ir.vc.core.impl
   (:documentation "Functionality for generating Verification Conditions for later use in Why3")
   (:use :cl :ir.utils)
-  (:import-from :ir.vc.core :assertion :precd :postcd :default :*external-functions*)
+  (:import-from :ir.vc.core :assertion :precd :postcd :default :*external-functions* :true :false)
   (:export :verifier-identifier :verifier-output :verifier-output-comment *entry-points*
 	   :remove-decls))
 
@@ -192,11 +192,14 @@ defun-ish body and the resulting body as values."
   `(let ((*premise-list* nil))
      ,@body))
 
-(defmacro with-premise (content &body body)
-  (if (macroexpand-1 content)
-      `(let ((*premise-list* (cons ,content *premise-list*)))
+(defmacro with-named-premise (name content &body body)
+  (if (or name (macroexpand-1 content))
+      `(let ((*premise-list* (cons (list ,name ,content) *premise-list*)))
 	 ,@body)
       `(progn ,@body)))
+
+(defmacro with-premise (content &body body)
+  (macroexpand-1 `(with-named-premise "" ,content ,@body)))
 
 (defmacro terminal-expression (expression &key type norename)
   "We have to do postcd/{result=expression}"
@@ -281,7 +284,7 @@ defun-ish body and the resulting body as values."
 (defmacro with-goal-set (&body body)
   `(let ((*goal-set* nil))
      (let ((result (progn ,@body)))
-       (values *goal-set* result))))
+       (values (reverse *goal-set*) result))))
 
 (defun @-p (form)
   "Returns whether the form is a funcall."
@@ -293,14 +296,14 @@ defun-ish body and the resulting body as values."
   "Gets the postcondition of an expression, if that expression is a
   funcall. If it is not, it returns NIL (which is a suitable return
   value for `with-premise')."
-  (when (@-p form)
-    (@postcd (cadr form) (cddr form) results)))
+  (if (@-p form)
+      (@postcd (cadr form) (cddr form) results)
+      (list 'ir.vc.core:@ '= results form)))
 
 (defmacro assume-binding (lhs form &body body)
   (if lhs
-      `(with-premise (list 'ir.vc.core:@ '= ',lhs ',form)
-	 (with-premise (expr-postcondition ',form '(,lhs))
-	   ,@body))))
+      `(with-premise (expr-postcondition ',form ',lhs)
+	,@body)))
 
 
 (defmacro ir.vc.core:define (&whole definition
@@ -320,7 +323,9 @@ defun-ish body and the resulting body as values."
 	   (with-variables ,typed-lambda-list
 	     (with-function-definition ',(cdr definition)
 	       (with-current-function ',function-name
-		 ,@body))))))))
+		 (with-named-premise ,(symbol-name function-name)
+		     (@precd ',function-name ',(drop-types typed-lambda-list))
+		   ,@body)))))))))
 
 (defun drop-types (typed-var-list)
   (mapcar #'car typed-var-list))
@@ -336,10 +341,11 @@ defun-ish body and the resulting body as values."
 	    ))))
 
 (defun case-alternative (case-condition)
-  (lambda (alt)
+  (lambda (alt idx)
     (destructuring-bind (pattern form) alt
-      `(assume-binding ,(drop-types-from-case-pattern pattern) ',case-condition
-	 ,form))))
+      `(with-named-premise (format nil "case_~D" ,idx) 'true
+	 (assume-binding ,(drop-types-from-case-pattern pattern) ',case-condition
+	   ,form)))))
 
 (defun case-default-p (alt)
   (eq (car alt)
@@ -362,16 +368,18 @@ defun-ish body and the resulting body as values."
       (assert (eq nil (cdr default-alternative-list)))
       `(let ((case-condition ',condition))
 	 (declare (ignore case-condition))
-	 ,@(mapcar (case-alternative condition) non-default-alternative-list)
+	 ,@(loop for elt in non-default-alternative-list and idx from 0
+	      collect (funcall (case-alternative condition) elt idx))
 	 ,(when default-alternative
-		(case-alternative-default condition default-alternative non-default-alternative-list))))))
+		`(with-named-premise "case_def" 'true
+		   ,(case-alternative-default condition default-alternative non-default-alternative-list)))))))
 
 (defmacro ir.vc.core:the (expr-type value)
   `(terminal-expression (,value) :type ,expr-type))
 
-(defmacro maybe-output-precd-goal (val)
+(defmacro maybe-output-precd-goal (val &key name)
   (when (@-p val)
-    `(output-goal (@precd ',(cadr val) ',(cddr val)))))
+    `(output-goal (@precd ',(cadr val) ',(cddr val)) :name ,name)))
 
 (defmacro ir.vc.core:let (typed-var-list val &body body)
   "Lexically binds a var, syntax is: (let var val body-form). It can
@@ -379,12 +387,13 @@ defun-ish body and the resulting body as values."
   (assert (not (cdr body))) ;; Only one expression
   (if (and (= 1 (length typed-var-list))
 	   (= 2 (length (car typed-var-list))))
-      `(with-variables ,typed-var-list
-	 (maybe-output-precd-goal ,val)
-	 (with-premise (@precd ',(cadr val) ',(cddr val))
-	   (assume-binding ,(car (drop-types typed-var-list)) ,val
-	     ;; TODO Warning it only works for let with one element in lhs see `car' above
-	     ,@body)))
+      `(progn
+	 (maybe-output-precd-goal ,val :name "letpre")
+	 (with-variables ,typed-var-list
+	   (with-named-premise "inlet" (@precd ',(cadr val) ',(cddr val))
+	     (assume-binding ,(drop-types typed-var-list) ,val
+	       ;; TODO Warning it only works for let with one element in lhs see `car' above
+	       ,@body))))
       (or nil
 	  (error "This let binding is not supported: ~S = ~S" typed-var-list val))))
 
@@ -396,20 +405,20 @@ defun-ish body and the resulting body as values."
   (let ((precd `(@precd ',function-name ',rest))
 	(postcd `(@postcd ',function-name ',rest (drop-types (get-current-typed-result-list)))))
     `(progn
-       (output-goal ,precd)
+       (output-goal ,precd :name "pre")
 
        (with-premise ,precd
 	 (macrolet ((ir.vc.core:the (type value) (declare (ignore type)) value))
 	   (with-premise (list :forall (get-current-typed-result-list))
 	     (if ,postcd
-		 (with-premise ,postcd
+		 (with-named-premise "post" ,postcd
 		   (format t "Assuming postcd = ~S for function ~S" ,postcd ',function-name)
 		   (terminal-expression ((ir.vc.core:@ ,function-name ,@(mapcar #'macroexpand-1 rest))) :norename t))
 		 (terminal-expression ((ir.vc.core:@ ,function-name ,@(mapcar #'macroexpand-1 rest))) :norename t))))))))
 
-(defun output-goal (target)
+(defun output-goal (target &key name)
   (when (not (eq target 'true))
-    (push (list (reverse *premise-list*) target) *goal-set*)))
+    (push (list (reverse *premise-list*) (list name target)) *goal-set*)))
 
 ;;;; End of grammar. 
 
@@ -461,7 +470,11 @@ defun-ish body and the resulting body as values."
 		   (clir-premises-to-string (rest premises))))))
 
 (defun clir-goal-to-string (goal)
-  (clir-premises-to-string (append (first goal) (rest goal))))
+  (destructuring-bind (premise-list target) goal
+    (let ((formulae (append premise-list (list target))))
+      (format nil "goal ~A: ~A"
+	      (apply #'concatenate 'string (mapcar #'first formulae))
+	      (clir-premises-to-string (mapcar #'second formulae))))))
 
 
 
@@ -503,12 +516,11 @@ get read and `INTERN'-ed on their proper packages."
 
 (defparameter *test-file* "../test/factorial.clir")
 
-
 ;; (caddr (load-file *test-file*))
 
 (eval-clir-file *test-file*)
 
-(multiple-value-bind (a b) (factorial::fact)
+(let ((a (factorial::fact)))
   (values
    (mapcar #'clir-goal-to-string a)
    (length a)))
