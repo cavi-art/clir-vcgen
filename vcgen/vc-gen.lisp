@@ -220,9 +220,13 @@ defun-ish body and the resulting body as values."
 		 (destructuring-bind (var-name var-type) typed-var
 		   `(,var-name (terminal-expression (,var-name) :type ,var-type)))))
 	`(with-premise (list :forall ',typed-variable-list)
-	   (symbol-macrolet ,(mapcar #'symbol-macroletize typed-variable-list))
-	   ,@body))
+	   (symbol-macrolet ,(mapcar #'symbol-macroletize typed-variable-list)
+	     ,@body)))
       `(progn ,@body)))
+
+(defmacro with-function-definitions (new-definitions &body body)
+  `(let ((*function-list* (append ,new-definitions (list *function-list*))))
+     ,@body))
 
 (defmacro with-function-definition (new-definition &body body)
   `(let ((*function-list* (cons ,new-definition *function-list*)))
@@ -327,10 +331,33 @@ defun-ish body and the resulting body as values."
 		     (@precd ',function-name ',(drop-types typed-lambda-list))
 		   ,@body)))))))))
 
-(defmacro ir.vc.core:letfun (&whole definition
-			       function-name typed-lambda-list result-arg
+(defmacro ir.vc.core:letfun (definitions
 			     &body full-body)
-  )
+  `(with-function-definitions ',definitions
+     ;; We need to verify each function in the letfun.  Inner
+     ;; non-pre/post functions will be verified as if the
+     ;; current-function was the toplevel one. Functions with
+     ;; pre/post conditions will be verified only up to their
+     ;; postcondition.
+
+     ,@(mapcar
+	(lambda (e)
+	  (destructuring-bind
+		(function-name typed-lambda-list result-lambda-list &body inner-body) e
+	    (declare (ignore typed-lambda-list result-lambda-list))
+	    (multiple-value-bind (body decls) (remove-decls inner-body)
+	      (let* ((assertions (cdr (assoc 'assertion decls)))
+		     (precd (assoc 'precd assertions))
+		     (postcd (assoc 'postcd assertions)))
+		(if (and precd postcd)
+		    `(with-current-function ,function-name
+		       ,@body)
+		    `(progn ,@body))))))
+	definitions)
+
+     ;; We also need to verify the main toplevel function
+     ,@full-body))
+
 
 (defun drop-types (typed-var-list)
   (mapcar #'car typed-var-list))
@@ -390,17 +417,12 @@ defun-ish body and the resulting body as values."
   "Lexically binds a var, syntax is: (let var val body-form). It can
    destructure tuples as (let (a b) (list a b) a)"
   (assert (not (cdr body))) ;; Only one expression
-  (if (and (= 1 (length typed-var-list))
-	   (= 2 (length (car typed-var-list))))
-      `(progn
-	 (maybe-output-precd-goal ,val :name "letpre")
-	 (with-variables ,typed-var-list
-	   (with-named-premise "inlet" (@precd ',(cadr val) ',(cddr val))
-	     (assume-binding ,(drop-types typed-var-list) ,val
-	       ;; TODO Warning it only works for let with one element in lhs see `car' above
-	       ,@body))))
-      (or nil
-	  (error "This let binding is not supported: ~S = ~S" typed-var-list val))))
+  `(progn
+     (maybe-output-precd-goal ,val :name "letpre")
+     (with-variables ,typed-var-list
+       (with-named-premise "inlet" (@precd ',(cadr val) ',(cddr val))
+	 (assume-binding ,(drop-types typed-var-list) ,val
+	   ,@body)))))
 
 (defmacro ir.vc.core:@ (function-name &rest rest)
   "We will use this macro to call all further functions. Depending
@@ -428,8 +450,6 @@ defun-ish body and the resulting body as values."
 ;;;; End of grammar. 
 
 
-
-
 (defun clir-formula-to-string (formula)
   (labels ((is-infix (op)
 	     (and (symbolp op)
@@ -449,7 +469,9 @@ defun-ish body and the resulting body as values."
 	       (t (error "Term ~S not understood." term))))
 	   (apply-predicate (p)
 	     (if (is-infix (first p))
-		 (format nil "~A ~A ~A" (clir-term-to-string (second p)) (first p) (clir-term-to-string (third p)))
+		 (format nil (format nil "~~{~~A~~^ ~A ~~}"
+				     (first p))
+			 (mapcar #'clir-term-to-string (rest p)))
 		 (format nil "~A(~{~A~^,~})" (first p) (mapcar #'clir-term-to-string (rest p))))))
     (typecase formula
       (symbol formula)
@@ -457,8 +479,10 @@ defun-ish body and the resulting body as values."
       (number formula)
       (cons (case (car formula)
 	      (:forall (format nil "forall ~:{~A:~A~:^,~}. " (second formula)))
+	      (and (format nil "~{~A~^ /\ ~}" (rest formula)))
+	      (or (format nil "~{~A~^ \/ ~}" (rest formula)))
 	      (the_postcd_placeholder_for (format nil "POSTCD[~A]" (rest formula)))
-	      (the_precd_placeholder_for "(*<*)true(*>*)")
+	      (the_precd_placeholder_for "true(*PRE[~A]*)" (rest formula))
 	      (ir.vc.core:@ (apply-predicate (rest formula)))
 	      (t (error "Formula ~S not understood. (car=~S)" formula (car formula)))))
       (t (error "Formula ~S not understood." formula)))))
@@ -468,7 +492,7 @@ defun-ish body and the resulting body as values."
 	   (or (not (consp premise))
 	       (not (member (car premise) (list :forall :exists))))))
     (when premises
-      (concatenate 'string (format nil "~(~A~)~@[ -> ~]"
+      (concatenate 'string (format nil "~(~A~)~@[~&~I -> ~]"
 				   (clir-formula-to-string (first premises))
 				   (and (not-quantifier (first premises))
 					(rest premises)))
@@ -477,7 +501,7 @@ defun-ish body and the resulting body as values."
 (defun clir-goal-to-string (goal)
   (destructuring-bind (premise-list target) goal
     (let ((formulae (append premise-list (list target))))
-      (format nil "goal ~A: ~A"
+      (format nil "goal ~A: ~A~%"
 	      (apply #'concatenate 'string (mapcar #'first formulae))
 	      (clir-premises-to-string (mapcar #'second formulae))))))
 
@@ -519,7 +543,6 @@ get read and `INTERN'-ed on their proper packages."
 
 (setf *entry-points* nil)
 
-(defparameter *test-file* (pathname "../test/factorial.clir"))
 (defparameter *clir-extension* ".clir")
 (defparameter *prover-extension* ".why")
 
@@ -530,8 +553,6 @@ get read and `INTERN'-ed on their proper packages."
      (make-pathname :directory (pathname-directory path) :type :unspecific)
      (make-pathname :name (concatenate 'string basename *prover-extension*) :type :unspecific))))
 
-;; (caddr (load-file *test-file*))
-
 (defun generate-theory (clir-file f)
   "f is a lambda taking zero arguments which returns the goals. It
   should be something like (lambda () (factorial::factorial))."
@@ -539,7 +560,10 @@ get read and `INTERN'-ed on their proper packages."
   (eval-clir-file clir-file)
   (let* ((prover-file (prover-file-from-clir clir-file))
 	 (goals (mapcar #'clir-goal-to-string (funcall f))))
-    (delete-file prover-file)
+
+    (when (probe-file prover-file)
+      (delete-file (probe-file prover-file)))
+
     (with-open-file (stream prover-file :direction :output)
       (format stream "theory UntitledTheory ~% use import int.Int~% use import int.Fact~%~{~A~^~%~} ~%~%end~%" goals))))
 
@@ -548,15 +572,25 @@ get read and `INTERN'-ed on their proper packages."
   (let ((prover-file (prover-file-from-clir clir-file)))
     (asdf::run-program (list "why3" "ide" (namestring prover-file)))))
 
+(defmacro easy-file (basename)
+  (format nil "../test/~(~A~).clir" (symbol-name basename)))
 
-(test-clir (pathname "../test/factorial.clir") (lambda () (factorial::factorial)))
+(defmacro easy-test (basename function)
+  `(test-clir (pathname (easy-file ,basename))
+	      (lambda () (,function))))
 
+(defmacro easy-goals (basename function &optional package)
+  `(progn
+     (eval-clir-file (pathname (easy-file ,basename)))
+     (mapcar #'clir-goal-to-string (,(if package
+					 (find-symbol (symbol-name function) (find-package package))
+					 function)))))
 
-(setf *goal-set* nil)
+;; (cadr (load-file (easy-file qsort)))
+;; (mapcar #'clir-goal-to-string (qsort::quicksort))
+;; (easy-test qsort qsort::quicksort)
+;; (easy-goals inssort |inssort|::inssort)
+;; (easy-test inssort |inssort|::inssort)
 
-;; (simple::test-define)
-
-;; (setf *entry-points* (get-toplevel-definitions (load-file *test-file*)))
-
-
-
+;; (easy-test factorial factorial::factorial)
+;; (test-clir (pathname "../test/factorial.clir") (lambda () (factorial::factorial)))
