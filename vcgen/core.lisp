@@ -155,7 +155,7 @@ defun-ish body and the resulting body as values."
     (typecase form
       ((or symbol nil) (values body (reverse declarations)))
       (cons (if (eq (car form) 'declare)
-		(remove-decls (cdr body) (cons form declarations))
+		(remove-decls (cdr body) (append (cdr form) declarations))
 		(values body (reverse declarations)))))))
 
 ;; TODO at some point, replace function "list" with a proper struct
