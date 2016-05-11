@@ -255,10 +255,7 @@ defun-ish body and the resulting body as values."
 	      (list result-list result-args))
 	)))
 
-
-(defun rename-symbols (formula original-symbols new-symbols &optional rec)
-  (unless (or (not new-symbols) rec)
-    (format t ";; Renaming ~S from ~s in terms of ~s~%" formula original-symbols new-symbols))
+(defun rename-symbols (formula original-symbols new-symbols)
   (if (eq nil new-symbols)
       formula
       ;; Simple s-exp tree walker
@@ -268,8 +265,8 @@ defun-ish body and the resulting body as values."
 		  (if p
 		      (nth p new-symbols)
 		      formula)))
-	(cons (cons (rename-symbols (car formula) original-symbols new-symbols t)
-		    (rename-symbols (cdr formula) original-symbols new-symbols t)))
+	(cons (cons (rename-symbols (car formula) original-symbols new-symbols)
+		    (rename-symbols (cdr formula) original-symbols new-symbols)))
 	(t formula))))
 
 
@@ -427,7 +424,6 @@ defun-ish body and the resulting body as values."
 	   (with-premise (list :forall (get-current-typed-result-list))
 	     (if ,postcd
 		 (with-named-premise "post" ,postcd
-		   (format t "Assuming postcd = ~S for function ~S" ,postcd ',function-name)
 		   (terminal-expression ((ir.vc.core:@ ,function-name ,@(mapcar #'macroexpand-1 rest))) :norename t))
 		 (terminal-expression ((ir.vc.core:@ ,function-name ,@(mapcar #'macroexpand-1 rest))) :norename t))))))))
 
