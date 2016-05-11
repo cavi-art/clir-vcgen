@@ -28,6 +28,9 @@
   (:shadow + - * / < <= > >=)
   (:export + - * / < <= > >= =)
 
+  (:shadow :length)
+  (:export :length)
+
   (:shadowing-import-from :common-lisp :let :let* :case :load)
   (:shadowing-import-from :common-lisp :type :the)
 
@@ -55,11 +58,11 @@
 
 (macrolet ((boolean-external-op (opname)
 	     `(pushnew '(,opname ((a int) (b int)) ((r int))
-		      (declare (assertion
-				(precd true)
-				(postcd (@ = r (@ ,opname a b)))))
-		      (error "Opaque term already verified."))
-		    ir.vc.core:*external-functions*)))
+			 (declare (assertion
+				   (precd true)
+				   (postcd (@ = r (@ ,opname a b)))))
+			 (error "Opaque term already verified."))
+		       ir.vc.core:*external-functions*)))
   (boolean-external-op +)
   (boolean-external-op -)
   (boolean-external-op *)
@@ -70,3 +73,9 @@
   (boolean-external-op >)
   (boolean-external-op >=))
 
+(pushnew '(length ((a (array int))) ((r int))
+	   (declare (assertion
+		     (precd true)
+		     (postcd (@ = r (@ length a)))))
+	   (error "Opaque term already verified."))
+	 ir.vc.core:*external-functions*)
