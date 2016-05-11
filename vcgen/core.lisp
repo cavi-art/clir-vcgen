@@ -213,7 +213,7 @@ defun-ish body and the resulting body as values."
       `(progn ,@body)))
 
 (defmacro with-function-definitions (new-definitions &body body)
-  `(let ((*function-list* (append ,new-definitions (list *function-list*))))
+  `(let ((*function-list* (append ,new-definitions *function-list*)))
      ,@body))
 
 (defmacro with-function-definition (new-definition &body body)
