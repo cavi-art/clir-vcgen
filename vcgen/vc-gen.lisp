@@ -479,10 +479,10 @@ defun-ish body and the resulting body as values."
       (number formula)
       (cons (case (car formula)
 	      (:forall (format nil "forall ~:{~A:~A~:^,~}. " (second formula)))
-	      (and (format nil "~{~A~^ /\ ~}" (rest formula)))
-	      (or (format nil "~{~A~^ \/ ~}" (rest formula)))
-	      (the_postcd_placeholder_for (format nil "POSTCD[~A]" (rest formula)))
-	      (the_precd_placeholder_for "true(*PRE[~A]*)" (rest formula))
+	      (and (format nil "~{~A~^ /\\ ~}" (rest formula)))
+	      (or (format nil "~{~A~^ \\/ ~}" (rest formula)))
+	      (ir.vc.core.impl::the_postcd_placeholder_for (format nil "POSTCD[~A]" (rest formula)))
+	      (ir.vc.core.impl::the_precd_placeholder_for "true(*PRE[~A]*)" (rest formula))
 	      (ir.vc.core:@ (apply-predicate (rest formula)))
 	      (t (error "Formula ~S not understood. (car=~S)" formula (car formula)))))
       (t (error "Formula ~S not understood." formula)))))
@@ -575,16 +575,18 @@ get read and `INTERN'-ed on their proper packages."
 (defmacro easy-file (basename)
   (format nil "../test/~(~A~).clir" (symbol-name basename)))
 
-(defmacro easy-test (basename function)
+(defmacro easy-test (basename function &optional package)
   `(test-clir (pathname (easy-file ,basename))
-	      (lambda () (,function))))
+	      (lambda () ,(if package
+			      `(funcall (find-symbol ,(symbol-name function) (find-package ,package)))
+			      (list function)))))
 
 (defmacro easy-goals (basename function &optional package)
   `(progn
      (eval-clir-file (pathname (easy-file ,basename)))
-     (mapcar #'clir-goal-to-string (,(if package
-					 (find-symbol (symbol-name function) (find-package package))
-					 function)))))
+     (mapcar #'clir-goal-to-string ,(if package
+					`(funcall (find-symbol ,(symbol-name function) (find-package ,package)))
+					(list function)))))
 
 ;; (cadr (load-file (easy-file qsort)))
 ;; (mapcar #'clir-goal-to-string (qsort::quicksort))
