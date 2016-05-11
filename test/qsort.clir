@@ -6,6 +6,11 @@
 
 
 (define quicksort ((v (array int))) ((vres (array int)))
+  (declare
+   (assertion
+    (precd true)
+    (postcd (and (@ sorted vres 0 (@ length vres))
+		 (@ permut v vres 0 (@ length vres))))))
   (letfun
       ((qsort ((v (array int)) (i int) (j int)) ((vsort (array int)))
 	 (declare
