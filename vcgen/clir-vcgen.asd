@@ -5,6 +5,8 @@
   :licence "AGPL3"
   :components ((:file "../cl-reexport")
 	       (:file "../utils" :depends-on ("../cl-reexport"))
+	       (:file "core" :depends-on ("../utils"))
+	       (:file "builtins" :depends-on ("../utils"))
 	       (:file "vc-gen" :depends-on ("../utils"))
-	       (:file "builtins" :depends-on ("../utils"))))
+))
 
