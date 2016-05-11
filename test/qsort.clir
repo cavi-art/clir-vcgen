@@ -18,7 +18,7 @@
 	   (precd (@ <= 0 i (@ + 1 j) (@ length v)))
 	   (postcd (and (@ sorted vsort i j)
 			(@ permut v vsort i j)))))
-	 (let ((b int)) (@ <= i j)
+	 (let ((b bool)) (@ <= i j)
 	      (case b
 		((the bool true) (@ f1 v i j))
 		((the bool false) v))))
