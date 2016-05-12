@@ -225,7 +225,7 @@ defun-ish body and the resulting body as values."
      ,@body))
 
 
-(defun @precd (function-name function-args)
+(defun @precd (function-name &optional function-args)
   (let* ((f (assoc function-name (append *function-list* *external-functions*)))
 	 (precd (get-precondition f))
 	 (parameter-list (drop-types (typed-lambda-list f))))
@@ -233,10 +233,11 @@ defun-ish body and the resulting body as values."
 	;; Rename parameters
 	(rename-symbols precd parameter-list function-args)
 	;; Else
-	'true
-	;; (list 'THE_PRECD_PLACEHOLDER_FOR
-	;;       function-name
-	;;       (list parameter-list function-args))
+	(progn
+	  (format t "Precondition for ~A not found." function-name)
+	  (list 'THE_PRECD_PLACEHOLDER_FOR
+		function-name
+		(list parameter-list function-args)))
 	)))
 
 (defun @postcd (function-name &optional function-args result-args)
@@ -329,15 +330,12 @@ defun-ish body and the resulting body as values."
 	(lambda (e)
 	  (destructuring-bind
 		(function-name typed-lambda-list result-lambda-list &body inner-body) e
-	    (declare (ignore typed-lambda-list result-lambda-list))
-	    (multiple-value-bind (body decls) (remove-decls inner-body)
-	      (let* ((assertions (cdr (assoc 'assertion decls)))
-		     (precd (assoc 'precd assertions))
-		     (postcd (assoc 'postcd assertions)))
-		(if (and precd postcd)
-		    `(with-current-function ,function-name
-		       ,@body)
-		    `(progn ,@body))))))
+	    (declare (ignore result-lambda-list))
+	    `(with-empty-premise-list
+	       (with-current-function ',function-name
+		 (with-variables ,typed-lambda-list
+		   (with-named-premise ,(format nil "~A_" function-name) (@precd ',function-name)
+		     ,@(remove-decls inner-body)))))))
 	definitions)
 
      ;; We also need to verify the main toplevel function
