@@ -46,6 +46,7 @@
   ;; We can use the same `the' and `type' as CL.
   (:import-from :cl :the :type)
   (:export :the :type)
+  (:export :default) ;; For the case
 
   ;; Our basic macro for defining everything else.
   (:export :verification-unit)
@@ -100,7 +101,7 @@
 
 (defmacro ir.rt.core:verification-unit (package-id &key sources uses documentation verify-only assume-verified)
   (declare (ignorable sources))
-  (let ((pkg (ir.rt.core.impl:get-package-symbol package-id)))
+  (let ((pkg (ir.rt.core.impl::get-package-symbol package-id)))
       `(progn (when (find-package ,pkg)
 		(unuse-package ',@uses ,pkg)
 		(delete-package ,pkg))
@@ -236,7 +237,10 @@ or less, a simple destructuring lambda list)"
 
 (defun from-clir-case-alt (pattern)
   (typecase pattern
-    (symbol pattern)
+    (symbol (if (eq pattern
+		    'ir.rt.core:default)
+		t
+		pattern))
     (cons (case (car pattern)
 	    ((ir.rt.core:the) (third pattern))
 	    ((ir.rt.core:@@) (error "case-constructor-destructuring is not yet implemented"))
@@ -270,7 +274,7 @@ executable funcall."
 (defun load-file (pathname)
   "Loads a file eval'uating package changes, so that identifiers will
 get read and `INTERN'-ed on their proper packages."
-  (with-throwaway-package (:ir.rt) (:ir)
+  (with-throwaway-package (:ir.rt.core :ir.rt.builtins) (:ir)
     ;; We need to use the IR package so that we import the
     ;; verification-unit construct in order to `EVAL' it on the `LOOP'
     ;; to make the new package definition.
@@ -288,7 +292,7 @@ get read and `INTERN'-ed on their proper packages."
 
 
 (defun eval-clir-file (pathname)
-  (with-throwaway-package (:ir.rt) (:ir)
+  (with-throwaway-package (:ir.rt.core :ir.rt.builtins) (:ir)
     (with-open-file (clir-stream pathname)
       (loop for a = (read clir-stream nil)
 	 while a
