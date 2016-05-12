@@ -31,6 +31,8 @@
   (:shadow :length)
   (:export :length)
 
+  (:export :partition) ; Temporarily here
+
   (:shadowing-import-from :common-lisp :let :let* :case :load)
   (:shadowing-import-from :common-lisp :type :the)
 
@@ -77,5 +79,23 @@
 	   (declare (assertion
 		     (precd true)
 		     (postcd (@ = r (@ length a)))))
+	   (error "Opaque term already verified."))
+	 ir.vc.core:*external-functions*)
+
+(pushnew '(partition ((v (array int)) (l int) (r int)) ((vres (array int)) (split int))
+	   (declare (assertion
+		     (precd (@ <= 0 l r (@ length v)))
+		     (postcd (and (@ permut_sub v vres l r)
+				  (@ <= l split r)
+				  (:forall ((j1 int))
+					   (-> (-> (@ <= l j)
+						   (@ < j split))
+					       (@ <= (@ get vres j)
+						     (@ get vres split))))
+				  (:forall ((j2 int))
+					   (-> (-> (@ < split i)
+						   (@ <= i r))
+					       (@ >= (@ get vres j)
+						     (@ get vres split))))))))
 	   (error "Opaque term already verified."))
 	 ir.vc.core:*external-functions*)

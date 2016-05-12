@@ -24,10 +24,11 @@
 (defpackage :vcgen.vc
   (:use :cl :ir.utils :ir.vc.core.impl)
   (:import-from :ir.vc.core :assertion :precd :postcd :default :*external-functions* :true :false)
+  (:import-from :ir.vc.core #:->)
   ;; (:import-from :ir.vc.core.impl #:*function-list* #:*external-functions*)
   (:export :clir-formula-to-string :clir-premises-to-string)
   (:export :generate-theory :test-clir)
-  (:export :easy-test :easy-goals))
+  (:export :easy-test :easy-protogoals :easy-goals))
 (in-package :vcgen.vc)
 
 
@@ -50,20 +51,23 @@
 	       (t (error "Term ~S not understood." term))))
 	   (apply-predicate (p)
 	     (if (is-infix (first p))
-		 (format nil (format nil "~~{~~A~~^ ~A ~~}"
+		 (format nil (format nil "~~{(~~A)~~^ ~A ~~}"
 				     (first p))
 			 (mapcar #'clir-term-to-string (rest p)))
-		 (format nil "~A(~{~A~^,~})" (first p) (mapcar #'clir-term-to-string (rest p))))))
+		 (format nil "~A ~{~A~^ ~}" (first p) (mapcar #'clir-term-to-string (rest p))))))
     (typecase formula
       (symbol formula)
       (string formula)
       (number formula)
       (cons (case (car formula)
-	      (:forall (format nil "forall ~:{~A:~A~:^,~}. " (second formula)))
-	      (and (format nil "~{~A~^ /\\ ~}" (rest formula)))
-	      (or (format nil "~{~A~^ \\/ ~}" (rest formula)))
-	      (ir.vc.core.impl::the_postcd_placeholder_for (format nil "POSTCD[~A]" (rest formula)))
-	      (ir.vc.core.impl::the_precd_placeholder_for "true(*PRE[~A]*)" (rest formula))
+	      (:forall (format nil "forall ~:{~A:~A~:^,~}. ~A" (second formula) (if (third formula)
+										    (clir-formula-to-string (third formula))
+										    "")))
+	      (-> (format nil "~{(~A)~^ -> ~}" (mapcar #'clir-formula-to-string (rest formula))))
+	      (and (format nil "~{~A~^ /\\ ~}" (mapcar #'clir-formula-to-string (rest formula))))
+	      (or (format nil "~{~A~^ \\/ ~}" (mapcar #'clir-formula-to-string (rest formula))))
+	      (ir.vc.core.impl::the_postcd_placeholder_for (format nil "true (* POSTCD OF ~A([~A]) *)" (second formula) (rest formula)))
+	      (ir.vc.core.impl::the_precd_placeholder_for (format nil "true (* PRECD OF ~A([~A]) *)" (second formula) (rest (rest formula))))
 	      (ir.vc.core:@ (apply-predicate (rest formula)))
 	      (t (error "Formula ~S not understood. (car=~S)" formula (car formula)))))
       (t (error "Formula ~S not understood." formula)))))
@@ -79,12 +83,10 @@
 					(rest premises)))
 		   (clir-premises-to-string (rest premises))))))
 
-(defun clir-goal-to-string (goal)
-  (destructuring-bind (premise-list target) goal
-    (let ((formulae (append premise-list (list target))))
-      (format nil "goal ~A: ~A~%"
-	      (apply #'concatenate 'string (mapcar #'first formulae))
-	      (clir-premises-to-string (mapcar #'second formulae))))))
+(defun clir-goal-to-string (formulae)
+  (format nil "goal ~A: ~A~%"
+	  (apply #'concatenate 'string (mapcar #'first formulae))
+	  (clir-premises-to-string (mapcar #'second formulae))))
 
 
 
@@ -138,13 +140,16 @@ get read and `INTERN'-ed on their proper packages."
   ;; TODO Use real imports
   (eval-clir-file clir-file)
   (let* ((prover-file (prover-file-from-clir clir-file))
-	 (goals (mapcar #'clir-goal-to-string (funcall f))))
+	 (goals (mapcar #'clir-goal-to-string (protogoals-to-goals (funcall f)))))
 
     (when (probe-file prover-file)
       (delete-file (probe-file prover-file)))
 
     (with-open-file (stream prover-file :direction :output)
-      (format stream "theory UntitledTheory ~% use import int.Int~% use import int.Fact~%~{~A~^~%~} ~%~%end~%" goals))))
+      (format stream "theory UntitledTheory ~% use import int.Int~%
+use import int.Fact~% use import array.Array~% use import
+array.IntArraySorted~% use import array.ArrayPermut~%~{~A~^~%~} ~%~%end~%"
+goals))))
 
 (defun test-clir (clir-file f)
   (generate-theory clir-file f)
@@ -160,18 +165,181 @@ get read and `INTERN'-ed on their proper packages."
 			      `(funcall (find-symbol ,(symbol-name function) (find-package ,package)))
 			      (list function)))))
 
-(defmacro easy-goals (basename function &optional package)
+(defmacro easy-protogoals (basename function &optional package)
   `(progn
      (eval-clir-file (pathname (easy-file ,basename)))
      (mapcar #'clir-goal-to-string ,(if package
 					`(funcall (find-symbol ,(symbol-name function) (find-package ,package)))
 					(list function)))))
 
+
+
+(defun synthetic-precondition-p (protogoal)
+  (let ((first-elt (second (second protogoal)))
+	(last-elt (second (car (last protogoal)))))
+    (and (consp first-elt)
+	 (eq (first first-elt)
+	     'ir.vc.core.impl::the_precd_placeholder_for)
+
+	 (and
+	  (or (not (consp last-elt))
+	      ;; Both are placeholders
+	      (eq (first first-elt)
+		  'ir.vc.core.impl::the_precd_placeholder_for)
+	      (eq (first last-elt)
+		  'ir.vc.core.impl::the_postcd_placeholder_for)
+
+	      ;; for the same function
+	      (eq (second first-elt)
+		  (second last-elt)))))))
+
+(defun synthetic-postcondition-p (protogoal)
+  (let ((first-elt (second (second protogoal)))
+	(last-elt (second (car (last protogoal)))))
+    (and
+     (consp first-elt)
+     (consp last-elt)
+     ;; Both are placeholders
+     (eq (first first-elt)
+	 'ir.vc.core.impl::the_precd_placeholder_for)
+     (eq (first last-elt)
+	 'ir.vc.core.impl::the_postcd_placeholder_for)
+
+     ;; for the same function
+     (eq (second first-elt)
+	 (second last-elt)))))
+
+(defun proper-goal-p (protogoal)
+  "A goal is proper if it does not contain any hole."
+  (and (or
+	(not (consp (second (car protogoal))))
+	(and
+	 (not (eq (first (second (car protogoal)))
+		  'ir.vc.core.impl::the_precd_placeholder_for))
+	 (not (eq (first (second (car protogoal)))
+		  'ir.vc.core.impl::the_postcd_placeholder_for))))
+       (or (not (cdr protogoal))
+	   (proper-goal-p (cdr protogoal)))))
+
+(defun hole-p (premise)
+  (and (consp (second premise))
+       (or (eq (first (second premise))
+	       'ir.vc.core.impl::the_precd_placeholder_for)
+	   (eq (first (second premise))
+	       'ir.vc.core.impl::the_postcd_placeholder_for))))
+
+(defun rename-symbol-list (hole real-premise)
+  (reduce (lambda (premise current-rename)
+	    (ir.vc.core.impl::rename-symbols premise
+					     (first current-rename)
+					     (second current-rename)))
+	  (cddr hole)
+	  :initial-value real-premise) ;; TODO Check if renames was a list or the rest of the list
+  )
+
+(defun find-all-in-hole-haystack (premise haystack)
+  (let ((function-name (second (second premise))))
+    function-name haystack
+    (or (remove-if-not (lambda (maybe-needle)
+			 (eq (second (second (second maybe-needle)))
+			     function-name))
+		       haystack)
+	(list (list premise)))))
+
+(defun has-placeholder (placeholder premise)
+  (and (consp (second (second premise)))
+       (or (eq (first (second (second premise)))
+	       placeholder)
+	   (has-placeholder placeholder (cdr premise)))))
+
+(defun remove-first-placeholder (premise)
+  (assert (or (not (second premise))
+	      (has-placeholder 'ir.vc.core.impl::the_precd_placeholder_for
+			       premise)))
+  (cons (first premise)
+	;; Remove second element which is the first placeholder
+	(cddr premise)))
+
+(defun remove-both-placeholders (premise)
+  (assert (or (not (second premise))
+	     (has-placeholder 'ir.vc.core.impl::the_precd_placeholder_for
+			      premise)
+	     (has-placeholder 'ir.vc.core.impl::the_postcd_placeholder_for
+			      premise)))
+  (butlast (cons (first premise)
+		 (cddr premise))))
+
+
+(defun patch-hole (premise pre post)
+  (let ((hole-haystack (case (caadr premise)
+			 (ir.vc.core.impl::the_precd_placeholder_for pre)
+			 (ir.vc.core.impl::the_postcd_placeholder_for post)))
+	(removal-function (case (caadr premise)
+			    (ir.vc.core.impl::the_precd_placeholder_for #'remove-first-placeholder)
+			    (ir.vc.core.impl::the_postcd_placeholder_for #'remove-both-placeholders))))
+    (mapcar
+     #'(lambda (subst)
+	 (rename-symbol-list (second premise)
+			     (funcall removal-function subst)))
+     (find-all-in-hole-haystack premise
+				hole-haystack))))
+
+(defun merge-protogoal (synthetic-preconditions synthetic-postconditions)
+  (labels ((merge-it (protogoal)
+	     (when protogoal
+
+	       (if (hole-p (car protogoal))
+
+		   ;; Patch-hole returns the list of premises for that
+		   ;; hole, so we need to use `APPEND' instead of just
+		   ;; `CONS'ing.
+		   (append
+		    ;; (list (car protogoal))
+		    (apply #'append (patch-hole (car protogoal) synthetic-preconditions synthetic-postconditions))
+		    (merge-it (cdr protogoal)))
+
+		   (cons (car protogoal)
+			 (merge-it (cdr protogoal)))))))
+    #'merge-it))
+
+
+(defun protogoals-to-goals (protogoals)
+  (let* ((proper-goals (remove-if-not #'proper-goal-p protogoals))
+	 (synthetic-postconditions (remove-if-not #'synthetic-postcondition-p protogoals))
+	 (synthetic-preconditions (remove-if-not #'synthetic-precondition-p protogoals))
+	 (protogoals-with-holes (remove-if #'synthetic-postcondition-p (remove-if #'proper-goal-p protogoals))))
+    (append proper-goals
+	    (mapcar (merge-protogoal synthetic-preconditions synthetic-postconditions)
+		    protogoals-with-holes))))
+
 ;; (cadr (load-file (easy-file qsort)))
 ;; (mapcar #'clir-goal-to-string (qsort::quicksort))
 ;; (easy-test qsort qsort::quicksort)
 ;; (easy-goals inssort |inssort|::inssort)
-;; (easy-test inssort |inssort|::inssort)
+
+;; (easy-test inssort inssort "inssort")
+
+;; (cadr (load-file (easy-file qsort)))
+
+;; (reverse (mapcar #'clir-goal-to-string (qsort::quicksort)))
+
+;; (eval-clir-file (easy-file qsort))
+;; (easy-test qsort quicksort 'qsort)
+
+(defun x ()
+  (let ((protogoals (qsort::quicksort)))
+    (let* ((proper-goals (remove-if-not #'proper-goal-p protogoals))
+	   (synthetic-postconditions (remove-if-not #'synthetic-postcondition-p protogoals))
+	   (synthetic-preconditions (remove-if-not #'synthetic-precondition-p protogoals))
+	   (protogoals-with-holes (remove-if #'synthetic-postcondition-p (remove-if #'proper-goal-p protogoals))))
+      (funcall (merge-protogoal synthetic-preconditions synthetic-postconditions)
+	       (car protogoals-with-holes))
+      (values
+       protogoals-with-holes
+       ))))
 
 ;; (easy-test factorial factorial::factorial)
 ;; (test-clir (pathname "../test/factorial.clir") (lambda () (factorial::factorial)))
+
+(clir-formula-to-string
+ (ir.vc.core.impl::get-postcondition (assoc 'ir.vc.builtins:partition *external-functions*)))

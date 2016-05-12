@@ -39,6 +39,7 @@
   ;; Logical connections
   (:import-from :cl :and :or)
   (:export :and :or)
+  (:export #:->)
 
   ;; We can use the same `the' and `type' as CL.
   (:export :the :type)
@@ -428,7 +429,7 @@ defun-ish body and the resulting body as values."
 
 (defun output-goal (target &key name)
   (when (not (eq target 'true))
-    (push (list (reverse *premise-list*) (list name target)) *goal-set*)))
+    (push (reverse (cons (list name target) *premise-list*)) *goal-set*)))
 
 
 
