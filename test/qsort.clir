@@ -8,16 +8,16 @@
 (define quicksort ((v (array int))) ((vres (array int)))
   (declare
    (assertion
-    (precd true)
+    (precd (@ <= 0 (@ length v)))
     (postcd (and (@ sorted vres)
 		 (@ permut_all v vres)))))
   (letfun
       ((qsort ((v (array int)) (i int) (j int)) ((vsort (array int)))
 	 (declare
 	  (assertion
-	   (precd (@ <= 0 i (@ + 1 j) (@ length v)))
-	   (postcd (and (@ sorted_sub vsort i j)
-			(@ permut_all v vsort)))))
+	   (precd (and (@ <= 0 i (@ + 1 j) (@ length v))))
+	   (postcd (and (@ sorted_sub vsort i (@ + 1 j))
+			(@ permut_sub v vsort i (@ + 1 j))))))
 	 (let ((b bool)) (@ <= i j)
 	      (case b
 		((the bool true) (@ f1 v i j))
