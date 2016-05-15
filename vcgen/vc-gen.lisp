@@ -38,7 +38,7 @@
 		  (member op
 			  '(+ - * / < <= >= = > % <>)
 			  :test (lambda (a b) (string-equal (symbol-name a) (symbol-name b))))))
-	   (clir-term-to-string (term)
+	   (clir-term-to-string (term &optional recursive)
 	     (typecase term
 	       (number term)
 	       (symbol term)
@@ -46,15 +46,24 @@
 	       (cons (case (car term)
 		       (quote (second term))
 		       (ir.vc.core:the (third term))
-		       (ir.vc.core:@ (apply-predicate (rest term)))
+		       (ir.vc.core:@ (apply-predicate (rest term) recursive))
 		       (t (error "Term ~S not understood." term))))
 	       (t (error "Term ~S not understood." term))))
-	   (apply-predicate (p)
-	     (if (is-infix (first p))
-		 (format nil (format nil "~~{(~~A)~~^ ~A ~~}"
-				     (first p))
-			 (mapcar #'clir-term-to-string (rest p)))
-		 (format nil "~A ~{~A~^ ~}" (first p) (mapcar #'clir-term-to-string (rest p))))))
+	   (is-array-access (fname)
+	     (string-equal (symbol-name fname)
+			   :get))
+	   (apply-predicate (p &optional recursive)
+	     (let ((predicate-str
+		    (if (is-infix (first p))
+			(format nil (format nil "~~{(~~A)~~^ ~A ~~}"
+					    (first p))
+				(mapcar (lambda (x) (clir-term-to-string x t)) (rest p)))
+			(if (is-array-access (first p))
+			    (format nil "~A[~A]" (second p) (third p))
+			    (format nil "~A ~{~A~^ ~}" (first p) (mapcar (lambda (x) (clir-term-to-string x t)) (rest p)))))))
+	       (if recursive
+		   (format nil "(~A)" predicate-str)
+		   predicate-str))))
     (typecase formula
       (symbol formula)
       (string formula)
@@ -77,16 +86,19 @@
 	   (or (not (consp premise))
 	       (not (member (car premise) (list :forall :exists))))))
     (when premises
-      (concatenate 'string (format nil "~(~A~)~@[~&~I -> ~]"
-				   (clir-formula-to-string (first premises))
-				   (and (not-quantifier (first premises))
+      (concatenate 'string (format nil "~10<(* ~A *) ~>~(~A~)~@[~&~I -> ~]"
+				   (first (first premises))
+				   (clir-formula-to-string (second (first premises)))
+				   (and (not-quantifier (second (first premises)))
 					(rest premises)))
 		   (clir-premises-to-string (rest premises))))))
 
+(defparameter *goal-count* 0)
 (defun clir-goal-to-string (formulae)
-  (format nil "goal ~A: ~A~%"
-	  (apply #'concatenate 'string (mapcar #'first formulae))
-	  (clir-premises-to-string (mapcar #'second formulae))))
+  (format nil "goal ~A_~A: ~A~%"
+	  (caadr formulae)
+	  (incf *goal-count*)
+	  (clir-premises-to-string formulae)))
 
 
 
@@ -159,11 +171,14 @@ goals))))
 (defmacro easy-file (basename)
   (format nil "../test/~(~A~).clir" (symbol-name basename)))
 
-(defmacro easy-test (basename function &optional package)
-  `(test-clir (pathname (easy-file ,basename))
-	      (lambda () ,(if package
-			      `(funcall (find-symbol ,(symbol-name function) (find-package ,package)))
-			      (list function)))))
+(defmacro easy-test (basename function &optional package only-theory)
+  (let ((testing-function (if only-theory
+			      'generate-theory
+			      'test-clir)))
+    `(,testing-function (pathname (easy-file ,basename))
+			(lambda () ,(if package
+					`(funcall (find-symbol ,(symbol-name function) (find-package ,package)))
+					(list function))))))
 
 (defmacro easy-protogoals (basename function &optional package)
   `(progn
@@ -180,18 +195,7 @@ goals))))
     (and (consp first-elt)
 	 (eq (first first-elt)
 	     'ir.vc.core.impl::the_precd_placeholder_for)
-
-	 (and
-	  (or (not (consp last-elt))
-	      ;; Both are placeholders
-	      (eq (first first-elt)
-		  'ir.vc.core.impl::the_precd_placeholder_for)
-	      (eq (first last-elt)
-		  'ir.vc.core.impl::the_postcd_placeholder_for)
-
-	      ;; for the same function
-	      (eq (second first-elt)
-		  (second last-elt)))))))
+	 (not (synthetic-postcondition-p protogoal)))))
 
 (defun synthetic-postcondition-p (protogoal)
   (let ((first-elt (second (second protogoal)))
@@ -277,6 +281,7 @@ goals))))
 	(removal-function (case (caadr premise)
 			    (ir.vc.core.impl::the_precd_placeholder_for #'remove-first-placeholder)
 			    (ir.vc.core.impl::the_postcd_placeholder_for #'remove-both-placeholders))))
+    ;; (break "Removing hole of type ~A from premise ~A. Got ~A candidates." (caadr premise) premise (length (find-all-in-hole-haystack premise hole-haystack)))
     (mapcar
      #'(lambda (subst)
 	 (rename-symbol-list (second premise)
@@ -308,9 +313,11 @@ goals))))
 	 (synthetic-postconditions (remove-if-not #'synthetic-postcondition-p protogoals))
 	 (synthetic-preconditions (remove-if-not #'synthetic-precondition-p protogoals))
 	 (protogoals-with-holes (remove-if #'synthetic-postcondition-p (remove-if #'proper-goal-p protogoals))))
-    (append proper-goals
-	    (mapcar (merge-protogoal synthetic-preconditions synthetic-postconditions)
-		    protogoals-with-holes))))
+    (progn
+      protogoals
+      (append proper-goals
+	      (mapcar (merge-protogoal synthetic-preconditions synthetic-postconditions)
+		      protogoals-with-holes)))))
 
 ;; (cadr (load-file (easy-file qsort)))
 ;; (mapcar #'clir-goal-to-string (qsort::quicksort))
@@ -326,20 +333,20 @@ goals))))
 ;; (eval-clir-file (easy-file qsort))
 ;; (easy-test qsort quicksort 'qsort)
 
-(defun x ()
-  (let ((protogoals (qsort::quicksort)))
-    (let* ((proper-goals (remove-if-not #'proper-goal-p protogoals))
-	   (synthetic-postconditions (remove-if-not #'synthetic-postcondition-p protogoals))
-	   (synthetic-preconditions (remove-if-not #'synthetic-precondition-p protogoals))
-	   (protogoals-with-holes (remove-if #'synthetic-postcondition-p (remove-if #'proper-goal-p protogoals))))
-      (funcall (merge-protogoal synthetic-preconditions synthetic-postconditions)
-	       (car protogoals-with-holes))
-      (values
-       protogoals-with-holes
-       ))))
+;; (defun x ()
+;;   (let ((protogoals (qsort::quicksort)))
+;;     (let* ((proper-goals (remove-if-not #'proper-goal-p protogoals))
+;; 	   (synthetic-postconditions (remove-if-not #'synthetic-postcondition-p protogoals))
+;; 	   (synthetic-preconditions (remove-if-not #'synthetic-precondition-p protogoals))
+;; 	   (protogoals-with-holes (remove-if #'synthetic-postcondition-p (remove-if #'proper-goal-p protogoals))))
+;;       (funcall (merge-protogoal synthetic-preconditions synthetic-postconditions)
+;; 	       (car protogoals-with-holes))
+;;       (values
+;;        protogoals-with-holes
+;;        ))))
 
 ;; (easy-test factorial factorial::factorial)
 ;; (test-clir (pathname "../test/factorial.clir") (lambda () (factorial::factorial)))
 
-(clir-formula-to-string
- (ir.vc.core.impl::get-postcondition (assoc 'ir.vc.builtins:partition *external-functions*)))
+;; (clir-formula-to-string
+;;  (ir.vc.core.impl::get-postcondition (assoc 'ir.vc.builtins:partition *external-functions*)))
