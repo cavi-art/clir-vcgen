@@ -197,43 +197,18 @@ functions."
 		function-decls)
      ,(from-clir (car body))))
 
+(defun drop-types (typed-var-list)
+  (mapcar #'car typed-var-list))
+
+(defun get-types (typed-var-list)
+  (mapcar #'cadr typed-var-list))
+
 (defmacro ir.rt.core:let (typed-var-list val &body body)
   "Lexically binds a var, syntax is: (let var val body-form). It can
 destructure tuples as (let (a b) (list a b) a)"
   (assert (not (cdr body))) ;; Only one expression
-  (if (and (= 1 (length typed-var-list))
-	   (= 2 (length (car typed-var-list))))
-      `(let ((,(caar typed-var-list) (the ,(cadar typed-var-list) ,(from-clir val)))) ,(from-clir (car body)))
-
-      ;; TODO Rewrite case for more than one variable
-      (if (and (= 2 (length typed-var-list))
-	       (symbolp (first typed-var-list)))
-
-	  (destructuring-bind
-		(var-name var-type) typed-var-list
-	    `(let ((,var-name ,val))
-	       (declare (type ,var-type ,var-name))
-	       ,(from-clir (car body))))
-		
-	  ;; TODO Correctly treat constructor application
-	  (labels
-	      ((strip-var-types (typed-var-list)
-		 "Strips variable types from a let-pattern (more
-or less, a simple destructuring lambda list)"
-		 (if (consp (car typed-var-list))
-		     (cons (strip-var-types (car typed-var-list))
-			   (strip-var-types (cdr typed-var-list)))
-		     (car typed-var-list)))
-	       (get-type-for-decl (typed-var-list)
-		 (reduce #'get-type-for-decl-acc typed-var-list))
-
-	       (get-type-for-decl-acc (typed-var-list acc)
-		 (if (consp (car typed-var-list))
-		     (nconc (get-type-for-decl typed-var-list) acc)
-		     (cons 'type typed-var-list))))
-	    `(destructuring-bind ,(strip-var-types typed-var-list) ,val
-	       (declare ,@(get-type-for-decl typed-var-list))
-	       ,(from-clir (car body)))))))
+  `(multiple-value-bind ,(drop-types typed-var-list) (the (values ,@(get-types typed-var-list)) ,(from-clir val))
+     ,(from-clir (car body))))
 
 (defun from-clir-case-alt (pattern)
   (typecase pattern
@@ -299,12 +274,11 @@ get read and `INTERN'-ed on their proper packages."
 	 collect (eval a)))))
 
 
-;; (ir.rt.core.impl::eval-clir-file #P"../test/inssort.clir")
-
+;; (ir.rt.core.impl::load-file #P "../test/inssort.clir")
+;; (ir.rt.core.impl::eval-clir-file #P"../test/qsort.clir")
+;; (ir.rt.core.impl::load-file #P "../test/qsort.clir")
 ;; (cons 'progn (mapcar #'macroexpand-1 (ir.rt.core.impl::load-file #P"../test/inssort.clir")))
-
 ;; (ir.rt.core.impl::load-file #P"../test/inssort.clir")
-
 ;; (ir.rt.core.impl::load-file #P"../test/simple.clir")
 
 
