@@ -237,13 +237,31 @@ dereferencing the pointer to the heap before."
 
 ;; END OF BUILTIN DECLS
 
-(defun partition (v l r)
-  (declare (type (array int) v)
-	   (type int l r))
-  (let ((p 0))
-    (the (values (array int) int)
-	 (values v
-		 p))))
+(in-package :ir.rt.builtins.impl)
+
+(defun ir.rt.builtins:partition (v low high)
+  (declare (type ir.rt.builtins:array v)
+	   (type fixnum low high))
+  (labels ((swap (v i j)
+	   (let ((vi (sel-array v i))
+		 (vj (sel-array v j)))
+	     (mod-array (mod-array v i vj)
+			j vi)))
+	   (loop-left (pivot-item i)
+	      (if (< (sel-array v (1+ i))
+		     pivot-item)
+		  (loop-left pivot-item (1+ i))
+		  (1+ i)))
+	   (loop-right (pivot-item j)
+	      (if (> (sel-array v (1- j))
+		     pivot-item)
+		  (loop-right pivot-item (1- j))
+		  (1- j))))
+    (let ((i (loop-left (sel-array v low) (1- low)))
+	  (j (loop-right (sel-array v low) (1+ high))))
+      (when (>= i j)
+	(return-from ir.rt.builtins:partition (values v j)))
+      (ir.rt.builtins:partition (swap v i j) low high))))
 
 
 ;; Local Variables:
