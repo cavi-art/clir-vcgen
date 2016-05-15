@@ -64,7 +64,7 @@
 										    (clir-formula-to-string (third formula))
 										    "")))
 	      (-> (format nil "~{(~A)~^ -> ~}" (mapcar #'clir-formula-to-string (rest formula))))
-	      (and (format nil "~{~A~^ /\\ ~}" (mapcar #'clir-formula-to-string (rest formula))))
+	      (and (format nil "(~{~A~^ /\\ ~})" (mapcar #'clir-formula-to-string (rest formula))))
 	      (or (format nil "~{~A~^ \\/ ~}" (mapcar #'clir-formula-to-string (rest formula))))
 	      (ir.vc.core.impl::the_postcd_placeholder_for (format nil "true (* POSTCD OF ~A([~A]) *)" (second formula) (rest formula)))
 	      (ir.vc.core.impl::the_precd_placeholder_for (format nil "true (* PRECD OF ~A([~A]) *)" (second formula) (rest (rest formula))))
