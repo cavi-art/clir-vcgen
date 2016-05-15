@@ -167,21 +167,21 @@ value."
 
 (defun get-heap (H L)
   (declare (type heap H)
-	   (type (loc (array fixnum)) L))
+	   (type (loc (vector fixnum)) L))
   "Dereferences a pointer from a heap"
   (cdr (assoc L H)))
 
 (defun mod-heap (H L V)
   (declare (type heap H)
-	   (type (loc (array fixnum)) L)
-	   (type cons V))
+	   (type (loc (vector fixnum)) L)
+	   (type vector V))
   "Modifies a heap `H' so that the position pointed by `L' should
 point to `V' in the resulting heap. TODO: should not be fixed to fixnum"
   (cons (cons L V) (remove L H :key #'car)))
 
 (defun newptr-in-heap (H V)
   (declare (type heap H)
-	   (type cons V))
+	   (type t V))
   "Creates a new pointer in the heap and returns `values' for both the
 newly allocated loc and the modified heap with such a pointer pointing
 to value `V'"
@@ -200,14 +200,16 @@ to value `V'"
   '((:is-heap . t)))
 
 (defun sel-array (E I)
-  (declare (type cons E)
+  (declare (type vector E)
 	   (type fixnum I))
   "Returns a value by index in a modelled array"
-  (the fixnum (cdr (assoc I E))))
+  (the fixnum (svref E I)))
 
 (defun mod-array (E I V)
   "Modifies an array `E' so that position `I' now points to `V'"
-  (the cons (cons (cons I V) (remove I E :key #'car))))
+  (let ((E2 (copy-seq e)))
+    (setf (svref E2 I) V)
+    (the vector E2)))
 
 (defun sel-array-heap (H V I)
   "Convenience method for selecting an array without dereferencing the
@@ -222,9 +224,17 @@ pointer to the heap before."
 (defun len-array-heap (H V)
   "Convenience method for getting the length of an array without
 dereferencing the pointer to the heap before."
-  (the fixnum (length (the list (get-heap H V)))))
+  (the fixnum (length (the vector (get-heap H V)))))
 
 ;; END OF BUILTIN DECLS
+
+(defun partition (v l r)
+  (declare (type (array int) v)
+	   (type int l r))
+  (let ((p 0))
+    (the (values (array int) int)
+	 (values v
+		 p))))
 
 
 ;; Local Variables:
