@@ -36,11 +36,19 @@
   ;; Export types
   (:export :fixnum :number :real :float)
 
+  (:shadow :array)
+  (:export :array :length :partition)
+
   ;; Export simulated heap and array
   (:export :assertion :defun-with-assertion)
   (:export :heap :heap-p :loc :new-heap :sel-heap :mod-heap :newptr-in-heap)
   (:export :sel-array :mod-array :sel-array-heap
 	   :mod-array-heap :len-array-heap))
+
+(defpackage :ir.rt.builtins.impl
+  (:use :common-lisp)
+  (:import-from :ir.rt.builtins :sel-array :mod-array))
+
 (in-package :ir.rt.builtins)
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
@@ -164,6 +172,7 @@ value."
 ;; but we should eventually annotate a loc with its associated heap
 ;; and type check the value at the end.
 (deftype loc (a) 'symbol)
+(deftype ir.rt.builtins:array (&optional type) `(cl:simple-vector))
 
 (defun get-heap (H L)
   (declare (type heap H)
@@ -186,7 +195,7 @@ point to `V' in the resulting heap. TODO: should not be fixed to fixnum"
 newly allocated loc and the modified heap with such a pointer pointing
 to value `V'"
   (let ((p (gensym)))
-    (values (the (loc (array fixnum)) p)
+    (values (the (loc (array int)) p)
 	    (the heap (cons (cons p V) H)))))
 
 (defmacro with-pointer-in-heap (H H2 V &body body)
@@ -200,7 +209,7 @@ to value `V'"
   '((:is-heap . t)))
 
 (defun sel-array (E I)
-  (declare (type vector E)
+  (declare (type array E)
 	   (type fixnum I))
   "Returns a value by index in a modelled array"
   (the fixnum (svref E I)))
@@ -224,7 +233,7 @@ pointer to the heap before."
 (defun len-array-heap (H V)
   "Convenience method for getting the length of an array without
 dereferencing the pointer to the heap before."
-  (the fixnum (length (the vector (get-heap H V)))))
+  (the fixnum (length (the array (get-heap H V)))))
 
 ;; END OF BUILTIN DECLS
 
