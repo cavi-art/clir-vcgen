@@ -88,7 +88,7 @@ program."
   (let ((first-elt (second (second protogoal))))
     (and (consp first-elt)
 	 (eq (first first-elt)
-	     'ir.vc.core.impl::the_precd_placeholder_for)
+	     :precd_placeholder)
 	 (not (synthetic-postcondition-p protogoal)))))
 
 (defun synthetic-postcondition-p (protogoal)
@@ -99,9 +99,9 @@ program."
      (consp last-elt)
      ;; Both are placeholders
      (eq (first first-elt)
-	 'ir.vc.core.impl::the_precd_placeholder_for)
+	 :precd_placeholder)
      (eq (first last-elt)
-	 'ir.vc.core.impl::the_postcd_placeholder_for)
+	 :postcd_placeholder)
 
      ;; for the same function
      (eq (second first-elt)
@@ -113,18 +113,18 @@ program."
 	(not (consp (second (car protogoal))))
 	(and
 	 (not (eq (first (second (car protogoal)))
-		  'ir.vc.core.impl::the_precd_placeholder_for))
+		  :precd_placeholder))
 	 (not (eq (first (second (car protogoal)))
-		  'ir.vc.core.impl::the_postcd_placeholder_for))))
+		  :postcd_placeholder))))
        (or (not (cdr protogoal))
 	   (proper-goal-p (cdr protogoal)))))
 
 (defun hole-p (premise)
   (and (consp (second premise))
        (or (eq (first (second premise))
-	       'ir.vc.core.impl::the_precd_placeholder_for)
+	       :precd_placeholder)
 	   (eq (first (second premise))
-	       'ir.vc.core.impl::the_postcd_placeholder_for))))
+	       :postcd_placeholder))))
 
 (defun rename-symbol-list (hole real-premise)
   (reduce (lambda (premise current-rename)
@@ -152,7 +152,7 @@ program."
 
 (defun remove-first-placeholder (premise)
   (assert (or (not (second premise))
-	      (has-placeholder 'ir.vc.core.impl::the_precd_placeholder_for
+	      (has-placeholder :precd_placeholder
 			       premise)))
   (cons (first premise)
 	;; Remove second element which is the first placeholder
@@ -160,9 +160,9 @@ program."
 
 (defun remove-both-placeholders (premise)
   (assert (or (not (second premise))
-	     (has-placeholder 'ir.vc.core.impl::the_precd_placeholder_for
+	     (has-placeholder :precd_placeholder
 			      premise)
-	     (has-placeholder 'ir.vc.core.impl::the_postcd_placeholder_for
+	     (has-placeholder :postcd_placeholder
 			      premise)))
   (butlast (cons (first premise)
 		 (cddr premise))))
@@ -170,11 +170,11 @@ program."
 
 (defun patch-hole (premise pre post)
   (let ((hole-haystack (case (caadr premise)
-			 (ir.vc.core.impl::the_precd_placeholder_for pre)
-			 (ir.vc.core.impl::the_postcd_placeholder_for post)))
+			 (:precd_placeholder pre)
+			 (:postcd_placeholder post)))
 	(removal-function (case (caadr premise)
-			    (ir.vc.core.impl::the_precd_placeholder_for #'remove-first-placeholder)
-			    (ir.vc.core.impl::the_postcd_placeholder_for #'remove-both-placeholders))))
+			    (:precd_placeholder #'remove-first-placeholder)
+			    (:postcd_placeholder #'remove-both-placeholders))))
     ;; (break "Removing hole of type ~A from premise ~A. Got ~A candidates." (caadr premise) premise (length (find-all-in-hole-haystack premise hole-haystack)))
     (mapcar
      #'(lambda (subst)

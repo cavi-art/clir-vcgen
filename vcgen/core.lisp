@@ -174,7 +174,7 @@ defun-ish body and the resulting body as values."
 	;; Else
 	(progn
 	  (format t "Precondition for ~A not found." function-name)
-	  (list 'THE_PRECD_PLACEHOLDER_FOR
+	  (list :precd_placeholder
 		function-name
 		(list parameter-list function-args)))
 	)))
@@ -190,7 +190,7 @@ defun-ish body and the resulting body as values."
 	 (rename-symbols postcd parameter-list function-args)
 	 result-list result-args)
 	;; Else
-	(list 'THE_POSTCD_PLACEHOLDER_FOR function-name
+	(list :postcd_placeholder function-name
 	      (list parameter-list function-args)
 	      (list result-list result-args))
 	)))

@@ -28,8 +28,7 @@
 			 (@ sorted E))))))
   (letfun
       ((f1 ((V (loc (array int))) (H heap)) ((_ heap))
-	 (let ((I int)) (the int 0)
-	   (@ f2 V I H)))
+	 (@ f2 V (the int 0) H))
 
        (f2 ((V (loc (array int))) (I int) (H heap)) ((f2 heap))
 	 (declare
@@ -37,7 +36,7 @@
 	   (precd (:forall ((E (array int)))
 			   (-> (@ = (@ deref H V) E)
 			       (and (@ sorted_sub E 0 I)
-				    (<= 0 I)))))
+				    (@ <= 0 I)))))
 	   (postcd (:forall ((E (array int)))
 			    (-> (@ = (@ deref f2 V) E)
 				(@ sorted E))))))
