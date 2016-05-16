@@ -18,13 +18,7 @@
 ;;; You should have received a copy of the GNU Affero General Public License
 ;;; along with CAVIART-VCGEN.  If not, see <http://www.gnu.org/licenses/>.
 
-(in-package :cl-user)
 (declaim (optimize debug))
-(defpackage :ir.vc.formatter
-  (:use :cl :ir.utils)
-  (:import-from :ir.vc.core :assertion :precd :postcd :default :*external-functions* :true :false)
-  (:import-from :ir.vc.core #:->)
-  (:export :clir-formula-to-string :clir-premises-to-string :clir-goals-to-string))
 (in-package :ir.vc.formatter)
 
 (defun clir-formula-to-string (formula)

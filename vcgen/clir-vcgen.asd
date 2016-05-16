@@ -5,11 +5,12 @@
   :licence "AGPL3"
   :components ((:file "../cl-reexport")
 	       (:file "../utils" :depends-on ("../cl-reexport"))
-	       (:file "core" :depends-on ("../utils"))
-	       (:file "builtins" :depends-on ("../utils"))
+	       (:file "packages")
+	       (:file "core" :depends-on ("packages" "../utils"))
+	       (:file "builtins" :depends-on ("packages"  "../utils"))
 	       (:file "assemble" :depends-on ("core"))
 	       (:file "formatter" :depends-on ("core"))
 	       (:file "user" :depends-on ("core"))
-	       (:file "vc-gen" :depends-on ("../utils"))
+	       (:file "vc-gen" :depends-on ("core" "../utils"))
 ))
 

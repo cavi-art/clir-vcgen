@@ -18,16 +18,7 @@
 ;;; You should have received a copy of the GNU Affero General Public License
 ;;; along with CAVIART-VCGEN.  If not, see <http://www.gnu.org/licenses/>.
 
-
-;;; Package declaration
-(in-package :cl-user)
 (declaim (optimize debug))
-(defpackage :ir.vc.assemble
-  (:use :cl :ir.utils)
-  (:import-from :ir.vc.core :assertion :precd :postcd :default :*external-functions* :true :false)
-  (:import-from :ir.vc.core #:->)
-  (:export #:protogoals-to-goals #:merge-protogoal)
-  (:export #:synthetic-preconditions #:synthetic-postconditions))
 (in-package :ir.vc.assemble)
 
 

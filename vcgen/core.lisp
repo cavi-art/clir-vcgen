@@ -18,84 +18,22 @@
 ;;; You should have received a copy of the GNU Affero General Public License
 ;;; along with CAVIART-VCGEN.  If not, see <http://www.gnu.org/licenses/>.
 
-
-(in-package :cl-user)
-
-(defpackage :ir.vc
-  (:use)
-  (:documentation "Verification conditions package. Defines no symbols
-  a priori, but will later export those of core."))
-
-;; (delete-package :ir.vc.core)
-;; (delete-package :ir.vc.core.impl)
-
-(defpackage :ir.vc.core
-  (:use)
-
-  ;; Runtime directives
-  (:import-from :cl :declare :optimize :speed :debug :safety)
-  (:export :declare :optimize :speed :debug :safety)
-
-  ;; Logical connections
-  (:import-from :cl :and :or)
-  (:export :and :or)
-  (:export #:->)
-
-  ;; We can use the same `the' and `type' as CL.
-  (:export :the :type)
-
-  ;; Our basic macro for defining everything else.
-  (:export :verification-unit)
-
-  ;; Basic types
-  (:export :int)
-  (:export :bool :true :false)
-
-  (:export :*assume-verified* :*verify-only* :*external-functions*)
-
-  ;; Our own DSL keywords
-  (:export :assertion :precd :postcd)
-  (:export :define :lettype :letvar :letconst :let :let* :letfun :case :default "@" "@@")
-
-  ;; Assertion comparators (will later be in another package)
-  (:shadowing-import-from :cl :=)
-  (:export :=))
-
+;;; This package does not need to be in packages.lisp: it is only used
+;;; here, and it should not leak symbols. Thus, if encapsulation is
+;;; not broken, this package does not need to be accessed from the
+;;; outside.
 (defpackage :ir.vc.core.impl
-  (:documentation "Functionality for generating Verification Conditions for later use in Why3")
+  (:documentation "Internal package to avoid leaking symbols. This
+  contains the functionality for generating Verification Conditions
+  for later use in a proof assistant.")
   (:use :cl :ir.utils)
   (:import-from :ir.vc.core :assertion :precd :postcd :default :*external-functions* :true :false)
-  (:export :verifier-identifier :verifier-output :verifier-output-comment *entry-points*
+  (:export :verifier-output :verifier-output-comment
 	   :remove-decls))
 
 (in-package :ir.vc.core.impl)
 
-(defun get-toplevel-functions (clir)
-  (loop
-     for a in clir
-     when (eq (car a) 'ir.vc.core:define) collect (cadr a)))
-
-(defun get-toplevel-definitions (clir)
-  (loop
-     for a in clir
-     when (eq (car a) 'ir.vc.core:define) collect (cdr a)))
-
-
-(defun verifier-identifier (symb)
-  "Sanitizes a symbol name so that it is a valid identififer in the
-  underlying verifier grammar."
-  (symbol-name symb))
-
-
-(defun verifier-output (&rest elements)
-  (write-to-string elements))
-
-
-(defun verifier-output-comment (&rest forms)
-  (format nil " (* ~s *)~%"
-	  (with-output-to-string (s)
-	    (apply #'format s forms))))
-
+;;; TODO: Handle lettype and the like.
 
 (defun get-precondition (function-definition)
   (let* ((body (function-body function-definition))
@@ -113,8 +51,6 @@
     (when postcd
       (cadr postcd))))
 
-
-(defparameter *entry-points* nil)
 (defvar *external-functions* nil)
 
 
@@ -137,6 +73,8 @@
 
 (defmacro ir.vc.core:lettype (type-symbol param-list type-boolean-expression optional-data)
   (declare (ignorable type-boolean-expression))
+  (error "This item of the grammar is not yet implemented. Please,
+  define your custom types in a compaion why3 file for the moment.")
   `(prog1
        (verifier-output 'type ,type-symbol ,param-list)
      (verifier-output-comment-to-string ,optional-data)))
