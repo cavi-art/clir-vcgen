@@ -21,123 +21,24 @@
 
 (in-package :cl-user)
 (declaim (optimize debug))
-(defpackage :vcgen.vc
-  (:use :cl :ir.utils :ir.vc.core.impl)
+(defpackage :ir.vc
+  (:use :cl :ir.utils :ir.vc.core.impl :ir.vc.assemble :ir.vc.formatter :ir.vc.user)
   (:import-from :ir.vc.core :assertion :precd :postcd :default :*external-functions* :true :false)
   (:import-from :ir.vc.core #:->)
-  ;; (:import-from :ir.vc.core.impl #:*function-list* #:*external-functions*)
-  (:export :clir-formula-to-string :clir-premises-to-string)
   (:export :generate-theory :test-clir)
   (:export :easy-test :easy-protogoals :easy-goals))
-(in-package :vcgen.vc)
+(in-package :ir.vc)
 
 
-(defun clir-formula-to-string (formula)
-  (labels ((is-infix (op)
-	     (and (symbolp op)
-		  (member op
-			  '(+ - * / < <= >= = > % <>)
-			  :test (lambda (a b) (string-equal (symbol-name a) (symbol-name b))))))
-	   (clir-term-to-string (term &optional recursive)
-	     (typecase term
-	       (number term)
-	       (symbol term)
-	       (string term)
-	       (cons (case (car term)
-		       (quote (second term))
-		       (ir.vc.core:the (third term))
-		       (ir.vc.core:@ (apply-predicate (rest term) recursive))
-		       (t (error "Term ~S not understood." term))))
-	       (t (error "Term ~S not understood." term))))
-	   (is-array-access (fname)
-	     (string-equal (symbol-name fname)
-			   :get))
-	   (apply-predicate (p &optional recursive)
-	     (let ((predicate-str
-		    (if (is-infix (first p))
-			(format nil (format nil "~~{(~~A)~~^ ~A ~~}"
-					    (first p))
-				(mapcar (lambda (x) (clir-term-to-string x t)) (rest p)))
-			(if (is-array-access (first p))
-			    (format nil "~A[~A]" (second p) (third p))
-			    (format nil "~A ~{~A~^ ~}" (first p) (mapcar (lambda (x) (clir-term-to-string x t)) (rest p)))))))
-	       (if recursive
-		   (format nil "(~A)" predicate-str)
-		   predicate-str))))
-    (typecase formula
-      (symbol formula)
-      (string formula)
-      (number formula)
-      (cons (case (car formula)
-	      (:forall (format nil "forall ~:{~A:~A~:^,~}. ~A" (second formula) (if (third formula)
-										    (clir-formula-to-string (third formula))
-										    "")))
-	      (-> (format nil "~{(~A)~^ -> ~}" (mapcar #'clir-formula-to-string (rest formula))))
-	      (and (format nil "(~{~A~^ /\\ ~})" (mapcar #'clir-formula-to-string (rest formula))))
-	      (or (format nil "~{~A~^ \\/ ~}" (mapcar #'clir-formula-to-string (rest formula))))
-	      (ir.vc.core.impl::the_postcd_placeholder_for (format nil "true (* POSTCD OF ~A([~A]) *)" (second formula) (rest formula)))
-	      (ir.vc.core.impl::the_precd_placeholder_for (format nil "true (* PRECD OF ~A([~A]) *)" (second formula) (rest (rest formula))))
-	      (ir.vc.core:@ (apply-predicate (rest formula)))
-	      (t (error "Formula ~S not understood. (car=~S)" formula (car formula)))))
-      (t (error "Formula ~S not understood." formula)))))
+(defparameter *clir-extension* ".clir"
+  "The extension for source clir files. easy- macros use this
+  extension to look for source files.")
 
-(defun clir-premises-to-string (premises)
-  (flet ((not-quantifier (premise)
-	   (or (not (consp premise))
-	       (not (member (car premise) (list :forall :exists))))))
-    (when premises
-      (concatenate 'string (format nil "~10<(* ~A *) ~>~(~A~)~@[~&~I -> ~]"
-				   (first (first premises))
-				   (clir-formula-to-string (second (first premises)))
-				   (and (not-quantifier (second (first premises)))
-					(rest premises)))
-		   (clir-premises-to-string (rest premises))))))
-
-(defparameter *goal-count* 0)
-(defun clir-goal-to-string (formulae)
-  (format nil "goal ~A_~A: ~A~%"
-	  (caadr formulae)
-	  (incf *goal-count*)
-	  (clir-premises-to-string formulae)))
-
-
-
-(defmacro quantified-lambda-params (lambda-params)
-  "Adds forall quantifiers for the received typed parameters. This is
-  useful for generating goals involving preconditions."
-  `'(:forall . ,lambda-params))
-
-
-(defun load-file (pathname)
-  "Loads a file eval'uating package changes, so that identifiers will
-get read and `INTERN'-ed on their proper packages."
-  (with-throwaway-package (:ir.vc.core :ir.vc.builtins :ir.vc) (:ir)
-    ;; We need to use the IR package so that we import the
-    ;; verification-unit construct in order to `EVAL' it on the `LOOP'
-    ;; to make the new package definition.
-    (with-open-file (clir-stream pathname)
-      (loop
-	 for a = (read clir-stream nil)
-	 while a
-	 if (and (consp a)
-		 (symbolp (car a))
-		 (string-equal (symbol-name (car a))
-			       "verification-unit"))
-	 collect (progn (eval a) a)
-	 else
-	 collect a))))
-
-(defun eval-clir-file (pathname)
-  (with-throwaway-package (:ir.vc.core :ir.vc.builtins :ir.vc) (:ir)
-    (with-open-file (clir-stream pathname)
-      (loop for a = (read clir-stream nil)
-	 while a
-	 collect (eval a)))))
-
-
-
-(defparameter *clir-extension* ".clir")
-(defparameter *prover-extension* ".why")
+(defparameter *prover-extension* ".why"
+  "The extension for prover files. The `generate-theory' function uses
+  this extension to write the theory files to disk. Some proof
+  assistants require certain extensions to work. For example, Why3
+  requres the extension \".why\" to be used.")
 
 (defun prover-file-from-clir (path)
   (let* ((name (pathname-name path))
@@ -150,9 +51,9 @@ get read and `INTERN'-ed on their proper packages."
   "f is a lambda taking zero arguments which returns the goals. It
   should be something like (lambda () (factorial::factorial))."
   ;; TODO Use real imports
-  (eval-clir-file clir-file)
+  (load-eval-file clir-file)
   (let* ((prover-file (prover-file-from-clir clir-file))
-	 (goals (mapcar #'clir-goal-to-string (protogoals-to-goals (funcall f)))))
+	 (goals (clir-goals-to-string (protogoals-to-goals (funcall f)))))
 
     (when (probe-file prover-file)
       (delete-file (probe-file prover-file)))
@@ -169,9 +70,17 @@ goals))))
     (asdf::run-program (list "why3" "ide" (namestring prover-file)))))
 
 (defmacro easy-file (basename)
-  (format nil "../test/~(~A~).clir" (symbol-name basename)))
+  "Returns the path to a file in ../test/basename.clir"
+  (format nil "../test/~(~A~)~A" (symbol-name basename) *clir-extension*))
 
 (defmacro easy-test (basename function &optional package only-theory)
+  "Tests a file. The \"basename\" must be the name of the file without
+  the ending .clir (or whatever `*clir-extension*' is set). See the
+  code of `easy-file' for more information. The \"function\" is the
+  name of the function to test. The package of that function can be
+  provided as a package designator in the third parameter. If the
+  fourth parameter is set, then the why file gets created but why3 is
+  not launched."
   (let ((testing-function (if only-theory
 			      'generate-theory
 			      'test-clir)))
@@ -182,171 +91,33 @@ goals))))
 
 (defmacro easy-protogoals (basename function &optional package)
   `(progn
-     (eval-clir-file (pathname (easy-file ,basename)))
-     (mapcar #'clir-goal-to-string ,(if package
-					`(funcall (find-symbol ,(symbol-name function) (find-package ,package)))
-					(list function)))))
+     (load-eval-file (pathname (easy-file ,basename)))
+     (clir-goals-to-string ,(if package
+				`(funcall (find-symbol ,(symbol-name function) (find-package ,package)))
+				(list function)))))
 
 
-
-(defun synthetic-precondition-p (protogoal)
-  (let ((first-elt (second (second protogoal)))
-	(last-elt (second (car (last protogoal)))))
-    (and (consp first-elt)
-	 (eq (first first-elt)
-	     'ir.vc.core.impl::the_precd_placeholder_for)
-	 (not (synthetic-postcondition-p protogoal)))))
-
-(defun synthetic-postcondition-p (protogoal)
-  (let ((first-elt (second (second protogoal)))
-	(last-elt (second (car (last protogoal)))))
-    (and
-     (consp first-elt)
-     (consp last-elt)
-     ;; Both are placeholders
-     (eq (first first-elt)
-	 'ir.vc.core.impl::the_precd_placeholder_for)
-     (eq (first last-elt)
-	 'ir.vc.core.impl::the_postcd_placeholder_for)
-
-     ;; for the same function
-     (eq (second first-elt)
-	 (second last-elt)))))
-
-(defun proper-goal-p (protogoal)
-  "A goal is proper if it does not contain any hole."
-  (and (or
-	(not (consp (second (car protogoal))))
-	(and
-	 (not (eq (first (second (car protogoal)))
-		  'ir.vc.core.impl::the_precd_placeholder_for))
-	 (not (eq (first (second (car protogoal)))
-		  'ir.vc.core.impl::the_postcd_placeholder_for))))
-       (or (not (cdr protogoal))
-	   (proper-goal-p (cdr protogoal)))))
-
-(defun hole-p (premise)
-  (and (consp (second premise))
-       (or (eq (first (second premise))
-	       'ir.vc.core.impl::the_precd_placeholder_for)
-	   (eq (first (second premise))
-	       'ir.vc.core.impl::the_postcd_placeholder_for))))
-
-(defun rename-symbol-list (hole real-premise)
-  (reduce (lambda (premise current-rename)
-	    (ir.vc.core.impl::rename-symbols premise
-					     (first current-rename)
-					     (second current-rename)))
-	  (cddr hole)
-	  :initial-value real-premise) ;; TODO Check if renames was a list or the rest of the list
-  )
-
-(defun find-all-in-hole-haystack (premise haystack)
-  (let ((function-name (second (second premise))))
-    function-name haystack
-    (or (remove-if-not (lambda (maybe-needle)
-			 (eq (second (second (second maybe-needle)))
-			     function-name))
-		       haystack)
-	(list (list premise)))))
-
-(defun has-placeholder (placeholder premise)
-  (and (consp (second (second premise)))
-       (or (eq (first (second (second premise)))
-	       placeholder)
-	   (has-placeholder placeholder (cdr premise)))))
-
-(defun remove-first-placeholder (premise)
-  (assert (or (not (second premise))
-	      (has-placeholder 'ir.vc.core.impl::the_precd_placeholder_for
-			       premise)))
-  (cons (first premise)
-	;; Remove second element which is the first placeholder
-	(cddr premise)))
-
-(defun remove-both-placeholders (premise)
-  (assert (or (not (second premise))
-	     (has-placeholder 'ir.vc.core.impl::the_precd_placeholder_for
-			      premise)
-	     (has-placeholder 'ir.vc.core.impl::the_postcd_placeholder_for
-			      premise)))
-  (butlast (cons (first premise)
-		 (cddr premise))))
-
-
-(defun patch-hole (premise pre post)
-  (let ((hole-haystack (case (caadr premise)
-			 (ir.vc.core.impl::the_precd_placeholder_for pre)
-			 (ir.vc.core.impl::the_postcd_placeholder_for post)))
-	(removal-function (case (caadr premise)
-			    (ir.vc.core.impl::the_precd_placeholder_for #'remove-first-placeholder)
-			    (ir.vc.core.impl::the_postcd_placeholder_for #'remove-both-placeholders))))
-    ;; (break "Removing hole of type ~A from premise ~A. Got ~A candidates." (caadr premise) premise (length (find-all-in-hole-haystack premise hole-haystack)))
-    (mapcar
-     #'(lambda (subst)
-	 (rename-symbol-list (second premise)
-			     (funcall removal-function subst)))
-     (find-all-in-hole-haystack premise
-				hole-haystack))))
-
-(defun merge-protogoal (synthetic-preconditions synthetic-postconditions)
-  (labels ((merge-it (protogoal)
-	     (when protogoal
-
-	       (if (hole-p (car protogoal))
-
-		   ;; Patch-hole returns the list of premises for that
-		   ;; hole, so we need to use `APPEND' instead of just
-		   ;; `CONS'ing.
-		   (append
-		    ;; (list (car protogoal))
-		    (apply #'append (patch-hole (car protogoal) synthetic-preconditions synthetic-postconditions))
-		    (merge-it (cdr protogoal)))
-
-		   (cons (car protogoal)
-			 (merge-it (cdr protogoal)))))))
-    #'merge-it))
-
-
-(defun protogoals-to-goals (protogoals)
-  (let* ((proper-goals (remove-if-not #'proper-goal-p protogoals))
-	 (synthetic-postconditions (remove-if-not #'synthetic-postcondition-p protogoals))
-	 (synthetic-preconditions (remove-if-not #'synthetic-precondition-p protogoals))
-	 (protogoals-with-holes (remove-if #'synthetic-postcondition-p (remove-if #'proper-goal-p protogoals))))
-    (progn
-      protogoals
-      (append proper-goals
-	      (mapcar (merge-protogoal synthetic-preconditions synthetic-postconditions)
-		      protogoals-with-holes)))))
-
+;;; How-to test:
+;;; To load a file (and inspect the second toplevel sexp):
 ;; (cadr (load-file (easy-file qsort)))
-;; (mapcar #'clir-goal-to-string (qsort::quicksort))
+
+;;; To throw it to Why3, just put (see `(documentation 'easy-test)')
 ;; (easy-test qsort qsort::quicksort)
+
+;;; To just show the goals
 ;; (easy-goals inssort |inssort|::inssort)
 
+;;; When the package name is in lowercase you need to do this:
 ;; (easy-test inssort inssort "inssort")
 
-;; (cadr (load-file (easy-file qsort)))
+;;; Just eval the file without further testing
+;; (load-eval-file (easy-file qsort))
 
-;; (reverse (mapcar #'clir-goal-to-string (qsort::quicksort)))
+;;; Get the synthetic postconditions
+;; (clir-goals-to-string (synthetic-postconditions (qsort::quicksort)))
 
-;; (eval-clir-file (easy-file qsort))
-;; (easy-test qsort quicksort 'qsort)
+;;; Needed for the next test
+;; (easy-test factorial factorial 'factorial)
 
-;; (defun x ()
-;;   (let ((protogoals (qsort::quicksort)))
-;;     (let* ((proper-goals (remove-if-not #'proper-goal-p protogoals))
-;; 	   (synthetic-postconditions (remove-if-not #'synthetic-postcondition-p protogoals))
-;; 	   (synthetic-preconditions (remove-if-not #'synthetic-precondition-p protogoals))
-;; 	   (protogoals-with-holes (remove-if #'synthetic-postcondition-p (remove-if #'proper-goal-p protogoals))))
-;;       (funcall (merge-protogoal synthetic-preconditions synthetic-postconditions)
-;; 	       (car protogoals-with-holes))
-;;       (values
-;;        protogoals-with-holes
-;;        ))))
-
-;; (easy-test factorial factorial::factorial)
+;;; Launch the VC generation without fancy macros
 ;; (test-clir (pathname "../test/factorial.clir") (lambda () (factorial::factorial)))
-
-;; (clir-formula-to-string
-;;  (ir.vc.core.impl::get-postcondition (assoc 'ir.vc.builtins:partition *external-functions*)))

@@ -7,6 +7,9 @@
 	       (:file "../utils" :depends-on ("../cl-reexport"))
 	       (:file "core" :depends-on ("../utils"))
 	       (:file "builtins" :depends-on ("../utils"))
+	       (:file "assemble" :depends-on ("core"))
+	       (:file "formatter" :depends-on ("core"))
+	       (:file "user" :depends-on ("core"))
 	       (:file "vc-gen" :depends-on ("../utils"))
 ))
 
