@@ -24,7 +24,7 @@
 (defpackage :ir.vc
   (:use :cl :ir.utils :ir.vc.core.impl :ir.vc.assemble :ir.vc.formatter :ir.vc.user)
   (:import-from :ir.vc.core :assertion :precd :postcd :default :*external-functions* :true :false)
-  (:import-from :ir.vc.core #:->)
+  (:import-from :ir.vc.core #:-> :*goal-set-hook*)
   (:export :generate-theory :test-clir)
   (:export :easy-test :easy-protogoals :easy-goals))
 (in-package :ir.vc)
@@ -102,7 +102,15 @@ goals))))
 ;; (cadr (load-file (easy-file qsort)))
 
 ;;; To throw it to Why3, just put (see `(documentation 'easy-test)')
-;; (easy-test qsort qsort::quicksort)
+;;(easy-test qsort qsort::quicksort)
+
+;; (load-eval-file (easy-file qsort))
+
+;;; To do special handling on the function call proper, bind the
+;;; dynamic variable `*goal-set-hook*' before the call.
+;; (let ((*goal-set-hook*  (lambda (protogoals)
+;;			  (clir-goals-to-string (protogoals-to-goals protogoals)))))
+;;   (qsort::quicksort))
 
 ;;; To just show the goals
 ;; (easy-goals inssort |inssort|::inssort)

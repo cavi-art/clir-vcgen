@@ -209,11 +209,23 @@ defun-ish body and the resulting body as values."
 		    (rename-symbols (cdr formula) original-symbols new-symbols)))
 	(t formula))))
 
+(defparameter ir.vc.core:*goal-set-hook* nil
+  "The last operation to be perfomed with a goal set before returning
+  it. Here, you can specify to generate the goals from protogoals,
+  generate the theory file, or even launching the prover! Please,
+  dynamically-bind this variable, but do not set it globally for
+  hygiene.")
+
+(defvar ir.vc.core:*default-goal-set-hook* #'identity
+  "The last operation to be perfomed by default (when *goal-set-hook*
+  has not been defined) with a goal set before returning it. This is
+  the default operation of the VCGEN when generating code. Please,
+  refer to `ir.vc.core:*goal-set-hook*' for more information.")
 
 (defmacro with-goal-set (&body body)
   `(let ((*goal-set* nil))
-     (let ((result (progn ,@body)))
-       (values (reverse *goal-set*) result))))
+     ,@body
+     (funcall (or ir.vc.core:*goal-set-hook* ,ir.vc.core:*default-goal-set-hook*) (reverse *goal-set*))))
 
 (defun @-p (form)
   "Returns whether the form is a funcall."
