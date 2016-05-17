@@ -1,14 +1,28 @@
+(defpackage :ir.vc.formulae
+  (:use :cl :ir.utils)
+
+  (:import-from :common-lisp #:and #:or)
+
+  (:export #:-> #:<-> #:and #:or #:forall #:exists)
+  (:export #:assertion #:precd #:postcd #:true #:false))
+
+
 (defpackage :ir.vc.core
   (:use)
+  (:documentation "This package is the core IR language. It conatins
+  and exports the IR grammar for VC generation.")
 
   ;; Runtime directives
   (:import-from :cl :declare :optimize :speed :debug :safety)
   (:export :declare :optimize :speed :debug :safety)
 
   ;; Logical connections
-  (:import-from :cl :and :or)
-  (:export :and :or)
-  (:export #:->)
+  (:import-from :ir.vc.formulae #:assertion #:precd #:postcd #:true #:false)
+  (:import-from :ir.vc.formulae #:-> #:<-> #:and #:or #:forall #:exists)
+
+  ;; Re-export those in formulae
+  (:export :assertion :precd :postcd #:true #:false)
+  (:export #:-> #:<-> #:and #:or #:forall #:exists)
 
   ;; We can use the same `the' and `type' as CL.
   (:export :the :type)
@@ -20,11 +34,11 @@
   (:export :int)
   (:export :bool :true :false)
 
-  (:export :*assume-verified* :*verify-only* :*external-functions*)
+  (:export :*assume-verified* :*verify-only* :*external-functions* :*goal-set-hook* :*default-goal-set-hook*)
 
   ;; Our own DSL keywords
-  (:export :assertion :precd :postcd)
   (:export :define :lettype :letvar :letconst :let :let* :letfun :case :default "@" "@@")
+
 
   ;; Assertion comparators (will later be in another package)
   (:shadowing-import-from :cl :=)
@@ -60,7 +74,7 @@
   ;; Export types
   (:export #:int #:bool)
   (:export #:true #:false)
-  
+
   (:export :fixnum :number :real :float)
 
   ;; Export simulated heap and array
