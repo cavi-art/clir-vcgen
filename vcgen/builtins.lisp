@@ -54,6 +54,8 @@
 			     (@ <= 0 l r)
 			     (@ < r (@ length v))))
 		     (postcd (and (@ permut_sub v vres l (@ + 1 r))
+				  (@ same_sub v vres 0 l)
+				  (@ same_sub v vres (@ + 1 r) (@length v))
 				  (@ <= l split r)
 				  (:forall ((j1 int))
 					   (-> (and (@ <= l j1)

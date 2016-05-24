@@ -29,3 +29,17 @@
 (theory/arrays/rt:funalias length #'cl:length)
 (theory/arrays/rt:typealias array simple-vector)
 (theory/arrays/rt:defun make-array (lambda (args) (make-array args)))
+
+(theory:define :array-equality)
+(vc)
+(preamble (why3 prover)
+	  (why3-use array.Array))
+
+(predicate same_sub ((a (array 'a))
+		     (b (array 'a))
+		     (l int)
+		     (r in))
+  (and (forall ((i int))
+	       (@ <= l i)
+	       (@ < i r)
+	       (@ = (@ get a i) (@ get b i)))))

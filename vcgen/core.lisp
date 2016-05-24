@@ -70,6 +70,13 @@
 	    ;; (verifier-output-comment "Parsing units in package ~a~%" ,package-id)
 	    )))
 
+(defmacro ir.vc.core:predicate (name typed-lambda-list &body expressions)
+  (assert (not (cdr expressions)))
+  (let ((expression (first expressions)))
+    (let ((symbol (intern (symbol-name '#:*predicates*)
+			   *package*)))
+      `(push (list ',name ',typed-lambda-list ',expression)
+	     ,symbol))))
 
 (defmacro ir.vc.core:lettype (type-symbol param-list type-boolean-expression optional-data)
   (declare (ignorable type-boolean-expression))

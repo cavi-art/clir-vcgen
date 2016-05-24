@@ -30,6 +30,8 @@
   ;; Our basic macro for defining everything else.
   (:export :verification-unit)
 
+  (:export :predicate)
+
   ;; Basic types
   (:export :int)
   (:export :bool :true :false)
