@@ -136,10 +136,11 @@ defun-ish body and the resulting body as values."
   "We have to do postcd/{result=expression}"
   (declare (ignore type))
   (if norename
-      `(output-goal (@postcd *current-function*))
+      `(output-goal (@postcd *current-function*) :name "postcondition")
       `(output-goal (rename-symbols (@postcd *current-function*)
 				    (drop-types (get-current-typed-result-list))
-				    ',expression))))
+				    ',expression)
+		     :name "postcondition")))
 
 
 (defmacro with-variables (typed-variable-list &body body)
@@ -359,10 +360,10 @@ defun-ish body and the resulting body as values."
    destructure tuples as (let (a b) (list a b) a)"
   (assert (not (cdr body))) ;; Only one expression
   `(progn
-     (maybe-output-precd-goal ,val :name "letpre")
+     (maybe-output-precd-goal ,val :name "let rhs precondition")
      (with-variables ,typed-var-list
        (with-premise ((@precd ',(cadr val) ',(cddr val))
-		      :name "inlet")
+		      :name "let rhs precondition")
 	 (assume-binding ,(drop-types typed-var-list) ,val
 	   ,@body)))))
 
@@ -374,14 +375,14 @@ defun-ish body and the resulting body as values."
   (let ((precd `(@precd ',function-name ',rest))
 	(postcd `(@postcd ',function-name ',rest (drop-types (get-current-typed-result-list)))))
     `(progn
-       (output-goal ,precd :name "pre")
+       (output-goal ,precd :name ,(format nil "~(~A~) precondition" function-name))
 
        (with-premise (,precd)
 	 (macrolet ((ir.vc.core:the (type value) (declare (ignore type)) value))
 	   (with-premise ((list :forall (get-current-typed-result-list)))
 	     (if ,postcd
 		 (with-premise (,postcd
-				:name "post")
+				:name ,(format nil "~(~A~) postcondition" function-name))
 		   (terminal-expression ((ir.vc.core:@ ,function-name ,@(mapcar #'macroexpand-1 rest))) :norename t))
 		 (terminal-expression ((ir.vc.core:@ ,function-name ,@(mapcar #'macroexpand-1 rest))) :norename t))))))))
 
