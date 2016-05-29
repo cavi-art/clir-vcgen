@@ -126,14 +126,11 @@ defun-ish body and the resulting body as values."
   `(let ((*premise-list* nil))
      ,@body))
 
-(defmacro with-named-premise (name content &body body)
+(defmacro with-premise ((content &key name) &body body)
   (if (or name (macroexpand-1 content))
       `(let ((*premise-list* (cons (list ,name ,content) *premise-list*)))
 	 ,@body)
       `(progn ,@body)))
-
-(defmacro with-premise (content &body body)
-  (macroexpand-1 `(with-named-premise "" ,content ,@body)))
 
 (defmacro terminal-expression (expression &key type norename)
   "We have to do postcd/{result=expression}"
@@ -153,7 +150,7 @@ defun-ish body and the resulting body as values."
       (labels ((symbol-macroletize (typed-var)
 		 (destructuring-bind (var-name var-type) typed-var
 		   `(,var-name (terminal-expression (,var-name) :type ,var-type)))))
-	`(with-premise (list :forall ',typed-variable-list)
+	`(with-premise ((list :forall ',typed-variable-list))
 	   (symbol-macrolet ,(mapcar #'symbol-macroletize typed-variable-list)
 	     ,@body)))
       `(progn ,@body)))
@@ -250,7 +247,7 @@ defun-ish body and the resulting body as values."
 
 (defmacro assume-binding (lhs form &body body)
   (if lhs
-      `(with-premise (expr-postcondition ',form ',lhs)
+      `(with-premise ((expr-postcondition ',form ',lhs))
 	,@body)))
 
 
@@ -271,8 +268,8 @@ defun-ish body and the resulting body as values."
 	   (with-variables ,typed-lambda-list
 	     (with-function-definition ',(cdr definition)
 	       (with-current-function ',function-name
-		 (with-named-premise ,(symbol-name function-name)
-		     (@precd ',function-name ',(drop-types typed-lambda-list))
+		 (with-premise ((@precd ',function-name ',(drop-types typed-lambda-list))
+				:name ,(symbol-name function-name))
 		   ,@body)))))))))
 
 (defmacro ir.vc.core:letfun (definitions
@@ -290,10 +287,11 @@ defun-ish body and the resulting body as values."
 		(function-name typed-lambda-list result-lambda-list &body inner-body) e
 	    (declare (ignore result-lambda-list))
 	    `(with-empty-premise-list
-	       (with-current-function ',function-name
-		 (with-variables ,typed-lambda-list
-		   (with-named-premise ,(format nil "~A_" function-name) (@precd ',function-name)
-		     ,@(remove-decls inner-body)))))))
+		 (with-current-function ',function-name
+		   (with-variables ,typed-lambda-list
+		     (with-premise ((@precd ',function-name)
+				    :name ,(format nil "~A_" function-name))
+		       ,@(remove-decls inner-body)))))))
 	definitions)
 
      ;; We also need to verify the main toplevel function
@@ -316,7 +314,8 @@ defun-ish body and the resulting body as values."
 (defun case-alternative (case-condition)
   (lambda (alt idx)
     (destructuring-bind (pattern form) alt
-      `(with-named-premise (format nil "case_~D" ,idx) 'true
+      `(with-premise ('true
+		      :name (format nil "case_~D" ,idx))
 	 (assume-binding ,(drop-types-from-case-pattern pattern) ',case-condition
 	   ,form)))))
 
@@ -327,7 +326,7 @@ defun-ish body and the resulting body as values."
 (defun case-alternative-default (condition default-alternative alternative-list)
   (if alternative-list
       (let ((pattern (caar alternative-list)))
-	`(with-premise (list 'ir.vc.core:@ '<> ,(drop-types-from-case-pattern pattern) ',condition)
+	`(with-premise ((list 'ir.vc.core:@ '<> ,(drop-types-from-case-pattern pattern) ',condition))
 	   ,(case-alternative-default condition default-alternative (cdr alternative-list))))
       (let ((default-body (second default-alternative)))
 	default-body)))
@@ -344,7 +343,8 @@ defun-ish body and the resulting body as values."
 	 ,@(loop for elt in non-default-alternative-list and idx from 0
 	      collect (funcall (case-alternative condition) elt idx))
 	 ,(when default-alternative
-		`(with-named-premise "case_def" 'true
+		`(with-premise ('true
+				:name "case_def")
 		   ,(case-alternative-default condition default-alternative non-default-alternative-list)))))))
 
 (defmacro ir.vc.core:the (expr-type value)
@@ -361,7 +361,8 @@ defun-ish body and the resulting body as values."
   `(progn
      (maybe-output-precd-goal ,val :name "letpre")
      (with-variables ,typed-var-list
-       (with-named-premise "inlet" (@precd ',(cadr val) ',(cddr val))
+       (with-premise ((@precd ',(cadr val) ',(cddr val))
+		      :name "inlet")
 	 (assume-binding ,(drop-types typed-var-list) ,val
 	   ,@body)))))
 
@@ -375,11 +376,12 @@ defun-ish body and the resulting body as values."
     `(progn
        (output-goal ,precd :name "pre")
 
-       (with-premise ,precd
+       (with-premise (,precd)
 	 (macrolet ((ir.vc.core:the (type value) (declare (ignore type)) value))
-	   (with-premise (list :forall (get-current-typed-result-list))
+	   (with-premise ((list :forall (get-current-typed-result-list)))
 	     (if ,postcd
-		 (with-named-premise "post" ,postcd
+		 (with-premise (,postcd
+				:name "post")
 		   (terminal-expression ((ir.vc.core:@ ,function-name ,@(mapcar #'macroexpand-1 rest))) :norename t))
 		 (terminal-expression ((ir.vc.core:@ ,function-name ,@(mapcar #'macroexpand-1 rest))) :norename t))))))))
 

@@ -102,7 +102,7 @@ goals))))
 ;; (cadr (load-file (easy-file qsort)))
 
 ;;; To throw it to Why3, just put (see `(documentation 'easy-test)')
-;;(easy-test qsort qsort::quicksort)
+;; (easy-test qsort qsort::quicksort)
 
 ;; (load-eval-file (easy-file qsort))
 
@@ -119,7 +119,7 @@ goals))))
 ;; (easy-test inssort inssort "inssort")
 
 ;;; Just eval the file without further testing
-;; (load-eval-file (easy-file qsort))
+;;(load-eval-file (easy-file qsort))
 
 ;;; Get the synthetic postconditions
 ;; (clir-goals-to-string (synthetic-postconditions (qsort::quicksort)))
