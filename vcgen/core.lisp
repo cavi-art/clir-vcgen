@@ -246,7 +246,7 @@ defun-ish body and the resulting body as values."
       (@postcd (cadr form) (cddr form) results)
       (list 'ir.vc.core:@ '= results form)))
 
-(defmacro assume-binding (lhs form &body body)
+(defmacro assume-binding ((lhs form &key name) &body body)
   (if lhs
       `(with-premise ((expr-postcondition ',form ',lhs))
 	,@body)))
@@ -317,7 +317,8 @@ defun-ish body and the resulting body as values."
     (destructuring-bind (pattern form) alt
       `(with-premise ('true
 		      :name (format nil "case_~D" ,idx))
-	 (assume-binding ,(drop-types-from-case-pattern pattern) ',case-condition
+	 (assume-binding (,(drop-types-from-case-pattern pattern) ',case-condition
+			   :name "case-binding")
 	   ,form)))))
 
 (defun case-default-p (alt)
@@ -364,7 +365,8 @@ defun-ish body and the resulting body as values."
      (with-variables ,typed-var-list
        (with-premise ((@precd ',(cadr val) ',(cddr val))
 		      :name "let rhs precondition")
-	 (assume-binding ,(drop-types typed-var-list) ,val
+	 (assume-binding (,(drop-types typed-var-list) ,val
+			   :name "let-binding")
 	   ,@body)))))
 
 (defmacro ir.vc.core:@ (function-name &rest rest)
