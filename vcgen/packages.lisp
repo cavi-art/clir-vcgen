@@ -4,7 +4,9 @@
   (:import-from :common-lisp #:and #:or)
 
   (:export #:-> #:<-> #:and #:or #:forall #:exists)
-  (:export #:assertion #:precd #:postcd #:true #:false))
+  (:export #:assertion #:precd #:postcd #:true #:false)
+
+  (:export #:make-premise #:premise-formula #:premise-name))
 
 
 (defpackage :ir.vc.core
@@ -47,7 +49,7 @@
   (:export :=))
 
 (defpackage :ir.vc.assemble
-  (:use :cl :ir.utils)
+  (:use :cl :ir.utils :ir.vc.formulae)
   (:import-from :ir.vc.core :assertion :precd :postcd :default :*external-functions* :true :false)
   (:import-from :ir.vc.core #:->)
   (:export #:protogoals-to-goals #:merge-protogoal)
@@ -85,7 +87,7 @@
 	   :mod-array-heap :len-array-heap))
 
 (defpackage :ir.vc.formatter
-  (:use :cl :ir.utils)
+  (:use :cl :ir.utils :ir.vc.formulae)
   (:import-from :ir.vc.core :assertion :precd :postcd :default :*external-functions* :true :false)
   (:import-from :ir.vc.core #:->)
   (:export :clir-formula-to-string :clir-premises-to-string :clir-goals-to-string))

@@ -26,7 +26,7 @@
   (:documentation "Internal package to avoid leaking symbols. This
   contains the functionality for generating Verification Conditions
   for later use in a proof assistant.")
-  (:use :cl :ir.utils)
+  (:use :cl :ir.utils :ir.vc.formulae)
   (:import-from :ir.vc.core :assertion :precd :postcd :default :*external-functions* :true :false)
   (:export :verifier-output :verifier-output-comment
 	   :remove-decls))
@@ -128,7 +128,7 @@ defun-ish body and the resulting body as values."
 
 (defmacro with-premise ((content &key name) &body body)
   (if (or name (macroexpand-1 content))
-      `(let ((*premise-list* (cons (list ,name ,content) *premise-list*)))
+      `(let ((*premise-list* (cons (make-premise :name ,name :formula ,content) *premise-list*)))
 	 ,@body)
       `(progn ,@body)))
 
@@ -391,7 +391,7 @@ defun-ish body and the resulting body as values."
 
 (defun output-goal (target &key name)
   (when (not (eq target 'true))
-    (push (reverse (cons (list name target) *premise-list*)) *goal-set*)))
+    (push (reverse (cons (make-premise :name name :formula target) *premise-list*)) *goal-set*)))
 
 
 

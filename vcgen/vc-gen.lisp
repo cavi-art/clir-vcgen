@@ -102,7 +102,7 @@ goals))))
 ;; (cadr (load-file (easy-file qsort)))
 
 ;;; To throw it to Why3, just put (see `(documentation 'easy-test)')
-;; (easy-test qsort qsort::quicksort)
+(easy-test qsort quicksort 'qsort)
 
 ;; (load-eval-file (easy-file qsort))
 

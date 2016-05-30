@@ -75,19 +75,23 @@
 	   (or (not (consp premise))
 	       (not (member (car premise) (list :forall :exists))))))
     (when premises
-      (concatenate 'string (format nil "~10<(* ~A *) ~>~(~A~)~@[~&~I -> ~]"
-				   (first (first premises))
-				   (clir-formula-to-string (second (first premises)))
-				   (and (not-quantifier (second (first premises)))
+      (concatenate 'string (format nil "~10< \"~A\" ~>~(~A~)~@[~&~I -> ~]"
+				   (premise-name (first premises))
+				   (clir-formula-to-string (premise-formula (first premises)))
+				   (and (not-quantifier (premise-formula (first premises)))
 					(rest premises)))
 		   (clir-premises-to-string (rest premises))))))
 
 
+(defun get-premise-name (premise-list)
+  (declare (ignore premise-list))
+  "name_not_implemented")
+
 (defun clir-goals-to-string (goals)
   (let ((goal-count 0))
-    (mapcar (lambda (formulae)
+    (mapcar (lambda (premises)
 	      (format nil "goal ~A_~A: ~A~%"
-		      (caadr formulae)
+		      (get-premise-name premises)
 		      (incf goal-count)
-		      (clir-premises-to-string formulae)))
+		      (clir-premises-to-string premises)))
 	    goals)))

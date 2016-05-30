@@ -85,15 +85,15 @@ program."
 ;;; Implementation details
 
 (defun synthetic-precondition-p (protogoal)
-  (let ((first-elt (second (second protogoal))))
+  (let ((first-elt (premise-formula (second protogoal))))
     (and (consp first-elt)
 	 (eq (first first-elt)
 	     :precd_placeholder)
 	 (not (synthetic-postcondition-p protogoal)))))
 
 (defun synthetic-postcondition-p (protogoal)
-  (let ((first-elt (second (second protogoal)))
-	(last-elt (second (car (last protogoal)))))
+  (let ((first-elt (premise-formula (second protogoal)))
+	(last-elt (premise-formula (car (last protogoal)))))
     (and
      (consp first-elt)
      (consp last-elt)
@@ -110,20 +110,20 @@ program."
 (defun proper-goal-p (protogoal)
   "A goal is proper if it does not contain any hole."
   (and (or
-	(not (consp (second (car protogoal))))
+	(not (consp (premise-formula (car protogoal))))
 	(and
-	 (not (eq (first (second (car protogoal)))
+	 (not (eq (first (premise-formula (car protogoal)))
 		  :precd_placeholder))
-	 (not (eq (first (second (car protogoal)))
+	 (not (eq (first (premise-formula (car protogoal)))
 		  :postcd_placeholder))))
        (or (not (cdr protogoal))
 	   (proper-goal-p (cdr protogoal)))))
 
 (defun hole-p (premise)
-  (and (consp (second premise))
-       (or (eq (first (second premise))
+  (and (consp (premise-formula premise))
+       (or (eq (first (premise-formula premise))
 	       :precd_placeholder)
-	   (eq (first (second premise))
+	   (eq (first (premise-formula premise))
 	       :postcd_placeholder))))
 
 (defun rename-symbol-list (hole real-premise)
@@ -136,17 +136,17 @@ program."
   )
 
 (defun find-all-in-hole-haystack (premise haystack)
-  (let ((function-name (second (second premise))))
+  (let ((function-name (second (premise-formula premise))))
     function-name haystack
     (or (remove-if-not (lambda (maybe-needle)
-			 (eq (second (second (second maybe-needle)))
+			 (eq (second (premise-formula (second maybe-needle)))
 			     function-name))
 		       haystack)
 	(list (list premise)))))
 
 (defun has-placeholder (placeholder premise)
-  (and (consp (second (second premise)))
-       (or (eq (first (second (second premise)))
+  (and (consp (premise-formula (second premise)))
+       (or (eq (first (premise-formula (second premise)))
 	       placeholder)
 	   (has-placeholder placeholder (cdr premise)))))
 
@@ -169,16 +169,16 @@ program."
 
 
 (defun patch-hole (premise pre post)
-  (let ((hole-haystack (case (caadr premise)
+  (let ((hole-haystack (case (first (premise-formula premise))
 			 (:precd_placeholder pre)
 			 (:postcd_placeholder post)))
-	(removal-function (case (caadr premise)
+	(removal-function (case (first (premise-formula premise))
 			    (:precd_placeholder #'remove-first-placeholder)
 			    (:postcd_placeholder #'remove-both-placeholders))))
     ;; (break "Removing hole of type ~A from premise ~A. Got ~A candidates." (caadr premise) premise (length (find-all-in-hole-haystack premise hole-haystack)))
     (mapcar
      #'(lambda (subst)
-	 (rename-symbol-list (second premise)
+	 (rename-symbol-list (premise-formula premise)
 			     (funcall removal-function subst)))
      (find-all-in-hole-haystack premise
 				hole-haystack))))
