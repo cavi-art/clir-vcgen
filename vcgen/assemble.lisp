@@ -30,20 +30,20 @@ postconditions previously synthetized. Returns a closure with the
 pre/postconditions so that this function result can be used in a
 `mapcar' of the goals."
   (labels ((merge-it (protogoal)
-	     (when protogoal
+             (when protogoal
 
-	       (if (hole-p (car protogoal))
+               (if (hole-p (car protogoal))
 
-		   ;; Patch-hole returns the list of premises for that
-		   ;; hole, so we need to use `APPEND' instead of just
-		   ;; `CONS'ing.
-		   (append
-		    ;; (list (car protogoal))
-		    (apply #'append (patch-hole (car protogoal) synthetic-preconditions synthetic-postconditions))
-		    (merge-it (cdr protogoal)))
+                   ;; Patch-hole returns the list of premises for that
+                   ;; hole, so we need to use `APPEND' instead of just
+                   ;; `CONS'ing.
+                   (append
+                    ;; (list (car protogoal))
+                    (apply #'append (patch-hole (car protogoal) synthetic-preconditions synthetic-postconditions))
+                    (merge-it (cdr protogoal)))
 
-		   (cons (car protogoal)
-			 (merge-it (cdr protogoal)))))))
+                   (cons (car protogoal)
+                         (merge-it (cdr protogoal)))))))
     #'merge-it))
 
 (defun synthetic-preconditions (protogoals)
@@ -70,15 +70,15 @@ conditions to see whether they may also have placeholders. This will
 require cycle detection and is expected in an upcoming version of this
 program."
   (let* ((proper-goals (remove-if-not #'proper-goal-p protogoals))
-	 (synthetic-postconditions (synthetic-postconditions protogoals))
-	 (synthetic-preconditions (synthetic-preconditions protogoals))
-	 (protogoals-with-holes (remove-if #'synthetic-postcondition-p
-					   (remove-if #'proper-goal-p protogoals))))
+         (synthetic-postconditions (synthetic-postconditions protogoals))
+         (synthetic-preconditions (synthetic-preconditions protogoals))
+         (protogoals-with-holes (remove-if #'synthetic-postcondition-p
+                                           (remove-if #'proper-goal-p protogoals))))
     (progn
       (append
        proper-goals
        (mapcar (merge-protogoal synthetic-preconditions synthetic-postconditions)
-	       protogoals-with-holes)))))
+               protogoals-with-holes)))))
 
 
 
@@ -87,98 +87,98 @@ program."
 (defun synthetic-precondition-p (protogoal)
   (let ((first-elt (premise-formula (second protogoal))))
     (and (consp first-elt)
-	 (eq (first first-elt)
-	     :precd_placeholder)
-	 (not (synthetic-postcondition-p protogoal)))))
+         (eq (first first-elt)
+             :precd_placeholder)
+         (not (synthetic-postcondition-p protogoal)))))
 
 (defun synthetic-postcondition-p (protogoal)
   (let ((first-elt (premise-formula (second protogoal)))
-	(last-elt (premise-formula (car (last protogoal)))))
+        (last-elt (premise-formula (car (last protogoal)))))
     (and
      (consp first-elt)
      (consp last-elt)
      ;; Both are placeholders
      (eq (first first-elt)
-	 :precd_placeholder)
+         :precd_placeholder)
      (eq (first last-elt)
-	 :postcd_placeholder)
+         :postcd_placeholder)
 
      ;; for the same function
      (eq (second first-elt)
-	 (second last-elt)))))
+         (second last-elt)))))
 
 (defun proper-goal-p (protogoal)
   "A goal is proper if it does not contain any hole."
   (and (or
-	(not (consp (premise-formula (car protogoal))))
-	(and
-	 (not (eq (first (premise-formula (car protogoal)))
-		  :precd_placeholder))
-	 (not (eq (first (premise-formula (car protogoal)))
-		  :postcd_placeholder))))
+        (not (consp (premise-formula (car protogoal))))
+        (and
+         (not (eq (first (premise-formula (car protogoal)))
+                  :precd_placeholder))
+         (not (eq (first (premise-formula (car protogoal)))
+                  :postcd_placeholder))))
        (or (not (cdr protogoal))
-	   (proper-goal-p (cdr protogoal)))))
+           (proper-goal-p (cdr protogoal)))))
 
 (defun hole-p (premise)
   (and (consp (premise-formula premise))
        (or (eq (first (premise-formula premise))
-	       :precd_placeholder)
-	   (eq (first (premise-formula premise))
-	       :postcd_placeholder))))
+               :precd_placeholder)
+           (eq (first (premise-formula premise))
+               :postcd_placeholder))))
 
 (defun rename-symbol-list (hole real-premise)
   (reduce (lambda (premise current-rename)
-	    (ir.vc.core.impl::rename-symbols premise
-					     (first current-rename)
-					     (second current-rename)))
-	  (cddr hole)
-	  :initial-value real-premise) ;; TODO Check if renames was a list or the rest of the list
+            (ir.vc.core.impl::rename-symbols premise
+                                             (first current-rename)
+                                             (second current-rename)))
+          (cddr hole)
+          :initial-value real-premise) ;; TODO Check if renames was a list or the rest of the list
   )
 
 (defun find-all-in-hole-haystack (premise haystack)
   (let ((function-name (second (premise-formula premise))))
     function-name haystack
     (or (remove-if-not (lambda (maybe-needle)
-			 (eq (second (premise-formula (second maybe-needle)))
-			     function-name))
-		       haystack)
-	(list (list premise)))))
+                         (eq (second (premise-formula (second maybe-needle)))
+                             function-name))
+                       haystack)
+        (list (list premise)))))
 
 (defun has-placeholder (placeholder premise)
   (and (consp (premise-formula (second premise)))
        (or (eq (first (premise-formula (second premise)))
-	       placeholder)
-	   (has-placeholder placeholder (cdr premise)))))
+               placeholder)
+           (has-placeholder placeholder (cdr premise)))))
 
 (defun remove-first-placeholder (premise)
   (assert (or (not (second premise))
-	      (has-placeholder :precd_placeholder
-			       premise)))
+              (has-placeholder :precd_placeholder
+                               premise)))
   (cons (first premise)
-	;; Remove second element which is the first placeholder
-	(cddr premise)))
+        ;; Remove second element which is the first placeholder
+        (cddr premise)))
 
 (defun remove-both-placeholders (premise)
   (assert (or (not (second premise))
-	     (has-placeholder :precd_placeholder
-			      premise)
-	     (has-placeholder :postcd_placeholder
-			      premise)))
+              (has-placeholder :precd_placeholder
+                               premise)
+              (has-placeholder :postcd_placeholder
+                               premise)))
   (butlast (cons (first premise)
-		 (cddr premise))))
+                 (cddr premise))))
 
 
 (defun patch-hole (premise pre post)
   (let ((hole-haystack (case (first (premise-formula premise))
-			 (:precd_placeholder pre)
-			 (:postcd_placeholder post)))
-	(removal-function (case (first (premise-formula premise))
-			    (:precd_placeholder #'remove-first-placeholder)
-			    (:postcd_placeholder #'remove-both-placeholders))))
+                         (:precd_placeholder pre)
+                         (:postcd_placeholder post)))
+        (removal-function (case (first (premise-formula premise))
+                            (:precd_placeholder #'remove-first-placeholder)
+                            (:postcd_placeholder #'remove-both-placeholders))))
     ;; (break "Removing hole of type ~A from premise ~A. Got ~A candidates." (caadr premise) premise (length (find-all-in-hole-haystack premise hole-haystack)))
     (mapcar
      #'(lambda (subst)
-	 (rename-symbol-list (premise-formula premise)
-			     (funcall removal-function subst)))
+         (rename-symbol-list (premise-formula premise)
+                             (funcall removal-function subst)))
      (find-all-in-hole-haystack premise
-				hole-haystack))))
+                                hole-haystack))))

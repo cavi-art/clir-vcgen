@@ -29,7 +29,7 @@
   (:use :cl :ir.utils :ir.vc.formulae)
   (:import-from :ir.vc.core :assertion :precd :postcd :default :*external-functions* :true :false)
   (:export :verifier-output :verifier-output-comment
-	   :remove-decls))
+           :remove-decls))
 
 (in-package :ir.vc.core.impl)
 
@@ -37,17 +37,17 @@
 
 (defun get-precondition (function-definition)
   (let* ((body (function-body function-definition))
-	 (declarations (cdr (assoc 'declare body)))
-	 (assertions (cdr (assoc 'assertion declarations)))
-	 (precd (assoc 'precd assertions)))
+         (declarations (cdr (assoc 'declare body)))
+         (assertions (cdr (assoc 'assertion declarations)))
+         (precd (assoc 'precd assertions)))
     (when precd
       (cadr precd))))
 
 (defun get-postcondition (function-definition)
   (let* ((body (function-body function-definition))
-	 (declarations (cdr (assoc 'declare body)))
-	 (assertions (cdr (assoc 'assertion declarations)))
-	 (postcd (assoc 'postcd assertions)))
+         (declarations (cdr (assoc 'declare body)))
+         (assertions (cdr (assoc 'assertion declarations)))
+         (postcd (assoc 'postcd assertions)))
     (when postcd
       (cadr postcd))))
 
@@ -58,25 +58,25 @@
 (defmacro ir.vc.core:verification-unit (package-id &key sources uses documentation verify-only assume-verified)
   (declare (ignorable sources))
   (let ((pkg (get-package-symbol package-id)))
-      `(progn (when (find-package ,pkg)
-		(unuse-package ',@uses ,pkg)
-		(delete-package ,pkg))
-	      (defpackage ,pkg
-		 (:use ,@uses)
-		 (:documentation ,documentation))
-	    (in-package ,pkg)
-	    (cl:mapcar (cl:lambda (f) (cl:push f ir.vc.core:*assume-verified*)) ,assume-verified)
-	    (cl:mapcar (cl:lambda (f) (cl:push f ir.vc.core:*verify-only*)) ,verify-only)
-	    ;; (verifier-output-comment "Parsing units in package ~a~%" ,package-id)
-	    )))
+    `(progn (when (find-package ,pkg)
+              (unuse-package ',@uses ,pkg)
+              (delete-package ,pkg))
+            (defpackage ,pkg
+              (:use ,@uses)
+              (:documentation ,documentation))
+            (in-package ,pkg)
+            (cl:mapcar (cl:lambda (f) (cl:push f ir.vc.core:*assume-verified*)) ,assume-verified)
+            (cl:mapcar (cl:lambda (f) (cl:push f ir.vc.core:*verify-only*)) ,verify-only)
+            ;; (verifier-output-comment "Parsing units in package ~a~%" ,package-id)
+            )))
 
 (defmacro ir.vc.core:predicate (name typed-lambda-list &body expressions)
   (assert (not (cdr expressions)))
   (let ((expression (first expressions)))
     (let ((symbol (intern (symbol-name '#:*predicates*)
-			   *package*)))
+                          *package*)))
       `(push (list ',name ',typed-lambda-list ',expression)
-	     ,symbol))))
+             ,symbol))))
 
 (defmacro ir.vc.core:lettype (type-symbol param-list type-boolean-expression optional-data)
   (declare (ignorable type-boolean-expression))
@@ -101,8 +101,8 @@ defun-ish body and the resulting body as values."
     (typecase form
       ((or symbol nil) (values body (reverse declarations)))
       (cons (if (eq (car form) 'declare)
-		(remove-decls (cdr body) (append (cdr form) declarations))
-		(values body (reverse declarations)))))))
+                (remove-decls (cdr body) (append (cdr form) declarations))
+                (values body (reverse declarations)))))))
 
 ;; TODO at some point, replace function "list" with a proper struct
 (defun function-body (function-definition)
@@ -129,7 +129,7 @@ defun-ish body and the resulting body as values."
 (defmacro with-premise ((content &key name) &body body)
   (if (or name (macroexpand-1 content))
       `(let ((*premise-list* (cons (make-premise :name ,name :formula ,content) *premise-list*)))
-	 ,@body)
+         ,@body)
       `(progn ,@body)))
 
 (defmacro terminal-expression (expression &key type norename)
@@ -138,9 +138,9 @@ defun-ish body and the resulting body as values."
   (if norename
       `(output-goal (@postcd *current-function*) :name "postcondition")
       `(output-goal (rename-symbols (@postcd *current-function*)
-				    (drop-types (get-current-typed-result-list))
-				    ',expression)
-		     :name "postcondition")))
+                                    (drop-types (get-current-typed-result-list))
+                                    ',expression)
+                    :name "postcondition")))
 
 
 (defmacro with-variables (typed-variable-list &body body)
@@ -149,11 +149,11 @@ defun-ish body and the resulting body as values."
   be known as variables and the postcondition will be well formed."
   (if typed-variable-list
       (labels ((symbol-macroletize (typed-var)
-		 (destructuring-bind (var-name var-type) typed-var
-		   `(,var-name (terminal-expression (,var-name) :type ,var-type)))))
-	`(with-premise ((list :forall ',typed-variable-list))
-	   (symbol-macrolet ,(mapcar #'symbol-macroletize typed-variable-list)
-	     ,@body)))
+                 (destructuring-bind (var-name var-type) typed-var
+                   `(,var-name (terminal-expression (,var-name) :type ,var-type)))))
+        `(with-premise ((list :forall ',typed-variable-list))
+           (symbol-macrolet ,(mapcar #'symbol-macroletize typed-variable-list)
+             ,@body)))
       `(progn ,@body)))
 
 (defmacro with-function-definitions (new-definitions &body body)
@@ -171,48 +171,48 @@ defun-ish body and the resulting body as values."
 
 (defun @precd (function-name &optional function-args)
   (let* ((f (assoc function-name (append *function-list* *external-functions*)))
-	 (precd (get-precondition f))
-	 (parameter-list (drop-types (typed-lambda-list f))))
+         (precd (get-precondition f))
+         (parameter-list (drop-types (typed-lambda-list f))))
     (if precd
-	;; Rename parameters
-	(rename-symbols precd parameter-list function-args)
-	;; Else
-	(progn
-	  (format t "Precondition for ~A not found." function-name)
-	  (list :precd_placeholder
-		function-name
-		(list parameter-list function-args)))
-	)))
+        ;; Rename parameters
+        (rename-symbols precd parameter-list function-args)
+        ;; Else
+        (progn
+          (format t "Precondition for ~A not found." function-name)
+          (list :precd_placeholder
+                function-name
+                (list parameter-list function-args)))
+        )))
 
 (defun @postcd (function-name &optional function-args result-args)
   (let* ((f (assoc function-name (append *function-list* *external-functions*)))
-	 (postcd (get-postcondition f))
-	 (parameter-list (drop-types (typed-lambda-list f)))
-	 (result-list (drop-types (typed-result-list f))))
+         (postcd (get-postcondition f))
+         (parameter-list (drop-types (typed-lambda-list f)))
+         (result-list (drop-types (typed-result-list f))))
     (if postcd
-	;; Rename lambda parameters and result parameters
-	(rename-symbols
-	 (rename-symbols postcd parameter-list function-args)
-	 result-list result-args)
-	;; Else
-	(list :postcd_placeholder function-name
-	      (list parameter-list function-args)
-	      (list result-list result-args))
-	)))
+        ;; Rename lambda parameters and result parameters
+        (rename-symbols
+         (rename-symbols postcd parameter-list function-args)
+         result-list result-args)
+        ;; Else
+        (list :postcd_placeholder function-name
+              (list parameter-list function-args)
+              (list result-list result-args))
+        )))
 
 (defun rename-symbols (formula original-symbols new-symbols)
   (if (eq nil new-symbols)
       formula
       ;; Simple s-exp tree walker
       (typecase formula
-	(nil nil)
-	(symbol (let ((p (position formula original-symbols)))
-		  (if p
-		      (nth p new-symbols)
-		      formula)))
-	(cons (cons (rename-symbols (car formula) original-symbols new-symbols)
-		    (rename-symbols (cdr formula) original-symbols new-symbols)))
-	(t formula))))
+        (nil nil)
+        (symbol (let ((p (position formula original-symbols)))
+                  (if p
+                      (nth p new-symbols)
+                      formula)))
+        (cons (cons (rename-symbols (car formula) original-symbols new-symbols)
+                    (rename-symbols (cdr formula) original-symbols new-symbols)))
+        (t formula))))
 
 (defparameter ir.vc.core:*goal-set-hook* nil
   "The last operation to be perfomed with a goal set before returning
@@ -236,7 +236,7 @@ defun-ish body and the resulting body as values."
   "Returns whether the form is a funcall."
   (and (consp form)
        (eq 'ir.vc.core:@
-	   (car form))))
+           (car form))))
 
 (defun expr-postcondition (form &optional results)
   "Gets the postcondition of an expression, if that expression is a
@@ -249,12 +249,12 @@ defun-ish body and the resulting body as values."
 (defmacro assume-binding ((lhs form &key name) &body body)
   (if lhs
       `(with-premise ((expr-postcondition ',form ',lhs))
-	,@body)))
+         ,@body)))
 
 
 (defmacro ir.vc.core:define (&whole definition
-			       function-name typed-lambda-list result-arg
-			     &body full-body)
+                               function-name typed-lambda-list result-arg
+                             &body full-body)
   "`DEFINE' introduces a set of goals. There should be pre/post
   conditions in this body, and from the expression (likely a letfun)
   we should increase our goal-set until we finally prove the latest
@@ -265,16 +265,16 @@ defun-ish body and the resulting body as values."
   (let ((body (remove-decls (function-body (cdr definition)))))
     `(defun ,function-name ()
        (with-goal-set
-	 (with-empty-premise-list
-	   (with-variables ,typed-lambda-list
-	     (with-function-definition ',(cdr definition)
-	       (with-current-function ',function-name
-		 (with-premise ((@precd ',function-name ',(drop-types typed-lambda-list))
-				:name ,(symbol-name function-name))
-		   ,@body)))))))))
+           (with-empty-premise-list
+               (with-variables ,typed-lambda-list
+                 (with-function-definition ',(cdr definition)
+                   (with-current-function ',function-name
+                     (with-premise ((@precd ',function-name ',(drop-types typed-lambda-list))
+                                    :name ,(symbol-name function-name))
+                       ,@body)))))))))
 
 (defmacro ir.vc.core:letfun (definitions
-			     &body full-body)
+                             &body full-body)
   `(with-function-definitions ',definitions
      ;; We need to verify each function in the letfun.  Inner
      ;; non-pre/post functions will be verified as if the
@@ -283,17 +283,17 @@ defun-ish body and the resulting body as values."
      ;; postcondition.
 
      ,@(mapcar
-	(lambda (e)
-	  (destructuring-bind
-		(function-name typed-lambda-list result-lambda-list &body inner-body) e
-	    (declare (ignore result-lambda-list))
-	    `(with-empty-premise-list
-		 (with-current-function ',function-name
-		   (with-variables ,typed-lambda-list
-		     (with-premise ((@precd ',function-name)
-				    :name ,(format nil "~A_" function-name))
-		       ,@(remove-decls inner-body)))))))
-	definitions)
+        (lambda (e)
+          (destructuring-bind
+                (function-name typed-lambda-list result-lambda-list &body inner-body) e
+            (declare (ignore result-lambda-list))
+            `(with-empty-premise-list
+                 (with-current-function ',function-name
+                   (with-variables ,typed-lambda-list
+                     (with-premise ((@precd ',function-name)
+                                    :name ,(format nil "~A_" function-name))
+                       ,@(remove-decls inner-body)))))))
+        definitions)
 
      ;; We also need to verify the main toplevel function
      ,@full-body))
@@ -306,20 +306,20 @@ defun-ish body and the resulting body as values."
   (typecase pattern
     (symbol pattern)
     (cons (case (car pattern)
-	    (ir.vc.core:the (third pattern)
-			    )
-	    (ir.vc.core:@ pattern)
-	    ;; Unmatched case TUPLE
-	    ))))
+            (ir.vc.core:the (third pattern)
+                            )
+            (ir.vc.core:@ pattern)
+            ;; Unmatched case TUPLE
+            ))))
 
 (defun case-alternative (case-condition)
   (lambda (alt idx)
     (destructuring-bind (pattern form) alt
       `(with-premise ('true
-		      :name (format nil "case_~D" ,idx))
-	 (assume-binding (,(drop-types-from-case-pattern pattern) ',case-condition
-			   :name "case-binding")
-	   ,form)))))
+                      :name (format nil "case_~D" ,idx))
+         (assume-binding (,(drop-types-from-case-pattern pattern) ',case-condition
+                           :name "case-binding")
+                         ,form)))))
 
 (defun case-default-p (alt)
   (eq (car alt)
@@ -328,26 +328,26 @@ defun-ish body and the resulting body as values."
 (defun case-alternative-default (condition default-alternative alternative-list)
   (if alternative-list
       (let ((pattern (caar alternative-list)))
-	`(with-premise ((list 'ir.vc.core:@ '<> ,(drop-types-from-case-pattern pattern) ',condition))
-	   ,(case-alternative-default condition default-alternative (cdr alternative-list))))
+        `(with-premise ((list 'ir.vc.core:@ '<> ,(drop-types-from-case-pattern pattern) ',condition))
+           ,(case-alternative-default condition default-alternative (cdr alternative-list))))
       (let ((default-body (second default-alternative)))
-	default-body)))
+        default-body)))
 
 (defmacro ir.vc.core:case (condition &body alternative-list)
   "A `ir.vc.core:CASE' with n alternatives will generate n goals, one
   per alternative, sequentially."
   (let ((non-default-alternative-list (remove-if #'case-default-p alternative-list))
-	(default-alternative-list (remove-if-not #'case-default-p alternative-list)))
+        (default-alternative-list (remove-if-not #'case-default-p alternative-list)))
     (let ((default-alternative (car default-alternative-list)))
       (assert (eq nil (cdr default-alternative-list)))
       `(let ((case-condition ',condition))
-	 (declare (ignore case-condition))
-	 ,@(loop for elt in non-default-alternative-list and idx from 0
-	      collect (funcall (case-alternative condition) elt idx))
-	 ,(when default-alternative
-		`(with-premise ('true
-				:name "case_def")
-		   ,(case-alternative-default condition default-alternative non-default-alternative-list)))))))
+         (declare (ignore case-condition))
+         ,@(loop for elt in non-default-alternative-list and idx from 0
+              collect (funcall (case-alternative condition) elt idx))
+         ,(when default-alternative
+                `(with-premise ('true
+                                :name "case_def")
+                   ,(case-alternative-default condition default-alternative non-default-alternative-list)))))))
 
 (defmacro ir.vc.core:the (expr-type value)
   `(terminal-expression (,value) :type ,expr-type))
@@ -364,10 +364,10 @@ defun-ish body and the resulting body as values."
      (maybe-output-precd-goal ,val :name "let rhs precondition")
      (with-variables ,typed-var-list
        (with-premise ((@precd ',(cadr val) ',(cddr val))
-		      :name "let rhs precondition")
-	 (assume-binding (,(drop-types typed-var-list) ,val
-			   :name "let-binding")
-	   ,@body)))))
+                      :name "let rhs precondition")
+         (assume-binding (,(drop-types typed-var-list) ,val
+                           :name "let-binding")
+                         ,@body)))))
 
 (defmacro ir.vc.core:@ (function-name &rest rest)
   "We will use this macro to call all further functions. Depending
@@ -375,18 +375,18 @@ defun-ish body and the resulting body as values."
   terminate the goal or pursue further by interpreting the next
   function."
   (let ((precd `(@precd ',function-name ',rest))
-	(postcd `(@postcd ',function-name ',rest (drop-types (get-current-typed-result-list)))))
+        (postcd `(@postcd ',function-name ',rest (drop-types (get-current-typed-result-list)))))
     `(progn
        (output-goal ,precd :name ,(format nil "~(~A~) precondition" function-name))
 
        (with-premise (,precd)
-	 (macrolet ((ir.vc.core:the (type value) (declare (ignore type)) value))
-	   (with-premise ((list :forall (get-current-typed-result-list)))
-	     (if ,postcd
-		 (with-premise (,postcd
-				:name ,(format nil "~(~A~) postcondition" function-name))
-		   (terminal-expression ((ir.vc.core:@ ,function-name ,@(mapcar #'macroexpand-1 rest))) :norename t))
-		 (terminal-expression ((ir.vc.core:@ ,function-name ,@(mapcar #'macroexpand-1 rest))) :norename t))))))))
+         (macrolet ((ir.vc.core:the (type value) (declare (ignore type)) value))
+           (with-premise ((list :forall (get-current-typed-result-list)))
+             (if ,postcd
+                 (with-premise (,postcd
+                                :name ,(format nil "~(~A~) postcondition" function-name))
+                   (terminal-expression ((ir.vc.core:@ ,function-name ,@(mapcar #'macroexpand-1 rest))) :norename t))
+                 (terminal-expression ((ir.vc.core:@ ,function-name ,@(mapcar #'macroexpand-1 rest))) :norename t))))))))
 
 
 (defun output-goal (target &key name)

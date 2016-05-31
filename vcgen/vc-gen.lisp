@@ -42,7 +42,7 @@
 
 (defun prover-file-from-clir (path)
   (let* ((name (pathname-name path))
-	 (basename (subseq name 0 (find #\. name :from-end t))))
+         (basename (subseq name 0 (find #\. name :from-end t))))
     (merge-pathnames
      (make-pathname :directory (pathname-directory path) :type :unspecific)
      (make-pathname :name (concatenate 'string basename *prover-extension*) :type :unspecific))))
@@ -53,7 +53,7 @@
   ;; TODO Use real imports
   (load-eval-file clir-file)
   (let* ((prover-file (prover-file-from-clir clir-file))
-	 (goals (clir-goals-to-string (protogoals-to-goals (funcall f)))))
+         (goals (clir-goals-to-string (protogoals-to-goals (funcall f)))))
 
     (when (probe-file prover-file)
       (delete-file (probe-file prover-file)))
@@ -62,7 +62,7 @@
       (format stream "theory UntitledTheory ~% use import int.Int~%
 use import int.Fact~% use import array.Array~% use import
 array.IntArraySorted~% use import array.ArrayPermut~%~{~A~^~%~} ~%~%end~%"
-goals))))
+              goals))))
 
 (defun test-clir (clir-file f)
   (generate-theory clir-file f)
@@ -82,19 +82,19 @@ goals))))
   fourth parameter is set, then the why file gets created but why3 is
   not launched."
   (let ((testing-function (if only-theory
-			      'generate-theory
-			      'test-clir)))
+                              'generate-theory
+                              'test-clir)))
     `(,testing-function (pathname (easy-file ,basename))
-			(lambda () ,(if package
-					`(funcall (find-symbol ,(symbol-name function) (find-package ,package)))
-					(list function))))))
+                        (lambda () ,(if package
+                                        `(funcall (find-symbol ,(symbol-name function) (find-package ,package)))
+                                        (list function))))))
 
 (defmacro easy-protogoals (basename function &optional package)
   `(progn
      (load-eval-file (pathname (easy-file ,basename)))
      (clir-goals-to-string ,(if package
-				`(funcall (find-symbol ,(symbol-name function) (find-package ,package)))
-				(list function)))))
+                                `(funcall (find-symbol ,(symbol-name function) (find-package ,package)))
+                                (list function)))))
 
 
 ;;; How-to test:
@@ -109,7 +109,7 @@ goals))))
 ;;; To do special handling on the function call proper, bind the
 ;;; dynamic variable `*goal-set-hook*' before the call.
 ;; (let ((*goal-set-hook*  (lambda (protogoals)
-;;			  (clir-goals-to-string (protogoals-to-goals protogoals)))))
+;;                        (clir-goals-to-string (protogoals-to-goals protogoals)))))
 ;;   (qsort::quicksort))
 
 ;;; To just show the goals

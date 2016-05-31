@@ -28,26 +28,26 @@
 (defun load-eval-file (pathname)
   "Reads, loads and evals a CLIR file in the VCGEN semantics."
   (with-throwaway-package (:ir.vc.core :ir.vc.builtins) (:ir)
-    (with-open-file (clir-stream pathname)
-      (loop for a = (read clir-stream nil)
-	 while a
-	 collect (eval a)))))
+                          (with-open-file (clir-stream pathname)
+                            (loop for a = (read clir-stream nil)
+                               while a
+                               collect (eval a)))))
 
 (defun read-file (pathname)
   "Loads a file eval'uating package changes, so that identifiers will
 get read and `INTERN'-ed on their proper packages."
   (with-throwaway-package (:ir.vc.core :ir.vc.builtins) (:ir)
-    ;; We need to use the IR package so that we import the
-    ;; verification-unit construct in order to `EVAL' it on the `LOOP'
-    ;; to make the new package definition.
-    (with-open-file (clir-stream pathname)
-      (loop
-	 for a = (read clir-stream nil)
-	 while a
-	 if (and (consp a)
-		 (symbolp (car a))
-		 (string-equal (symbol-name (car a))
-			       "verification-unit"))
-	 collect (progn (eval a) a)
-	 else
-	 collect a))))
+                          ;; We need to use the IR package so that we import the
+                          ;; verification-unit construct in order to `EVAL' it on the `LOOP'
+                          ;; to make the new package definition.
+                          (with-open-file (clir-stream pathname)
+                            (loop
+                               for a = (read clir-stream nil)
+                               while a
+                               if (and (consp a)
+                                       (symbolp (car a))
+                                       (string-equal (symbol-name (car a))
+                                                     "verification-unit"))
+                               collect (progn (eval a) a)
+                               else
+                               collect a))))
