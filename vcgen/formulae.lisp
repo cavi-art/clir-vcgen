@@ -21,6 +21,35 @@
 (declaim (optimize debug))
 (in-package :ir.vc.formulae)
 
+(defclass premise ()
+  ((formula :accessor premise-formula
+            :initarg :formula
+            :initform nil)
+   (comment :accessor premise-comment
+            :initarg :comment
+            :initform "")
+   (name :accessor premise-name
+         :initarg :name
+         :initform "")
+   (metadata :accessor premise-meta
+             :initarg :meta
+             :initform nil)))
+
+(defmethod print-object ((premise premise) stream)
+  (with-accessors ((formula premise-formula)
+                   (comment premise-comment)
+                   (name premise-name)
+                   (metadata premise-meta)) premise
+    (format stream "#!P(~S, ~S, ~S, ~S)" name comment metadata formula)))
+
+(defun premise-list-p% (elt)
+  (typecase elt
+    (null t)
+    (cons (and (typep (car elt) 'premise)
+               (premise-list-p% (cdr elt))))
+    (t nil)))
+(deftype premise-list () '(and list (satisfies premise-list-p%)))
 
 
-
+(defun make-premise (&rest kwargs)
+  (apply #'make-instance 'premise kwargs))
