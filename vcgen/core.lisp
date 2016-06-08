@@ -58,9 +58,10 @@
   dependant on VC/RT sub-packages. We also substitute the toplevel :IR
   package for :IR.VC.CORE and :IR.VC.BUILTINS."
   (flet ((rewrite-use-package (pkg)
-           (switch ((string-downcase (symbol-name pkg)) :test #'equal)
-             ("ir" '(:ir.vc.core :ir.vc.builtins))
-             (t (list (make-symbol (format nil "~A.VC" pkg)))))))
+           (if (equal (string-downcase (symbol-name pkg))
+                      "ir")
+               '(:ir.vc.core :ir.vc.builtins)
+               (list (make-symbol (format nil "~A.VC" pkg))))))
     (apply #'append (mapcar #'rewrite-use-package use-list))))
 
 ;;;; Grammar follows 
