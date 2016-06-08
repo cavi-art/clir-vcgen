@@ -400,14 +400,14 @@ defun-ish body and the resulting body as values."
     `(progn
        (output-goal ,precd :name ,(format nil "~(~A~) precondition" function-name))
 
-       (with-premise (,precd)
-         (macrolet ((ir.vc.core:the (type value) (declare (ignore type)) value))
-           (with-premise ((list :forall (get-current-typed-result-list)))
-             (if ,postcd
-                 (with-premise (,postcd
-                                :name ,(format nil "~(~A~) postcondition" function-name))
-                   (terminal-expression ((ir.vc.core:@ ,function-name ,@(mapcar #'macroexpand-1 rest))) :norename t))
-                 (terminal-expression ((ir.vc.core:@ ,function-name ,@(mapcar #'macroexpand-1 rest))) :norename t))))))))
+       ;; (with-premise (,precd))
+       (macrolet ((ir.vc.core:the (type value) (declare (ignore type)) value))
+         (with-premise ((list :forall (get-current-typed-result-list)))
+           (if ,postcd
+               (with-premise (,postcd
+                              :name ,(format nil "~(~A~) postcondition" function-name))
+                 (terminal-expression ((ir.vc.core:@ ,function-name ,@(mapcar #'macroexpand-1 rest))) :norename t))
+               (terminal-expression ((ir.vc.core:@ ,function-name ,@(mapcar #'macroexpand-1 rest))) :norename t)))))))
 
 
 (defun output-goal (target &key name)
