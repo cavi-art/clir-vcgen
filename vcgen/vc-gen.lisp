@@ -30,15 +30,16 @@
 (in-package :ir.vc)
 
 
-(defparameter *clir-extension* ".clir"
-  "The extension for source clir files. easy- macros use this
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defparameter *clir-extension* ".clir"
+    "The extension for source clir files. easy- macros use this
   extension to look for source files.")
 
-(defparameter *prover-extension* ".why"
-  "The extension for prover files. The `generate-theory' function uses
+  (defparameter *prover-extension* ".why"
+    "The extension for prover files. The `generate-theory' function uses
   this extension to write the theory files to disk. Some proof
   assistants require certain extensions to work. For example, Why3
-  requres the extension \".why\" to be used.")
+  requres the extension \".why\" to be used."))
 
 (defun prover-file-from-clir (path)
   (let* ((name (pathname-name path))
@@ -69,9 +70,9 @@ array.IntArraySorted~% use import array.ArrayPermut~%~{~A~^~%~} ~%~%end~%"
   (let ((prover-file (prover-file-from-clir clir-file)))
     (asdf::run-program (list "why3" "ide" (namestring prover-file)))))
 
-(defmacro easy-file (basename)
+(defmacro easy-file (basename &optional (extension *clir-extension*))
   "Returns the path to a file in ../test/basename.clir"
-  (format nil "../test/~(~A~)~A" (symbol-name basename) *clir-extension*))
+  (format nil "../test/~(~A~)~A" (symbol-name basename) extension))
 
 (defmacro easy-test (basename function &optional package only-theory)
   "Tests a file. The \"basename\" must be the name of the file without
@@ -102,9 +103,17 @@ array.IntArraySorted~% use import array.ArrayPermut~%~{~A~^~%~} ~%~%end~%"
 ;; (cadr (load-file (easy-file qsort)))
 
 ;;; To throw it to Why3, just put (see `(documentation 'easy-test)')
-(easy-test qsort quicksort 'qsort)
+;; (easy-test qsort quicksort 'qsort)
 
+;; (easy-test inssort inssort "inssort")
+;; (easy-test factorial factorial 'factorial)
 ;; (load-eval-file (easy-file qsort))
+
+;;; Look at the protogoals in a file
+;; (let ((protogoals-file (easy-file qsort ".p.why"))
+;;       (theory (easy-protogoals qsort quicksort 'qsort)))
+;;   (with-open-file (stream protogoals-file :direction :output)
+;;     (format stream "prototheory UntitledTheory~%~A~%end" theory)))
 
 ;;; To do special handling on the function call proper, bind the
 ;;; dynamic variable `*goal-set-hook*' before the call.
