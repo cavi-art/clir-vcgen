@@ -268,7 +268,8 @@ defun-ish body and the resulting body as values."
 
 (defmacro assume-binding ((lhs form &key name) &body body)
   (if lhs
-      `(with-premise ((expr-postcondition ',form ',lhs))
+      `(with-premise ((expr-postcondition ',form ',lhs)
+                      :name ,name)
          ,@body)))
 
 
