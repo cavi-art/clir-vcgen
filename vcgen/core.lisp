@@ -53,22 +53,41 @@
 
 (defvar *external-functions* nil)
 
+(defun rewrite-uses-packages (use-list)
+  "Rewrites the USE packages from use-list so that they are now
+  dependant on VC/RT sub-packages. We also substitute the toplevel :IR
+  package for :IR.VC.CORE and :IR.VC.BUILTINS."
+  (flet ((rewrite-use-package (pkg)
+           (switch ((string-downcase (symbol-name pkg)) :test #'equal)
+             ("ir" '(:ir.vc.core :ir.vc.builtins))
+             (t (list (make-symbol (format nil "~A.VC" pkg)))))))
+    (apply #'append (mapcar #'rewrite-use-package use-list))))
 
 ;;;; Grammar follows 
 (defmacro ir.vc.core:verification-unit (package-id &key sources uses documentation verify-only assume-verified)
   (declare (ignorable sources))
-  (let ((pkg (get-package-symbol package-id)))
-    `(progn (when (find-package ,pkg)
-              (unuse-package ',@uses ,pkg)
-              (delete-package ,pkg))
-            (defpackage ,pkg
-              (:use ,@uses)
-              (:documentation ,documentation))
-            (in-package ,pkg)
-            (cl:mapcar (cl:lambda (f) (cl:push f ir.vc.core:*assume-verified*)) ,assume-verified)
-            (cl:mapcar (cl:lambda (f) (cl:push f ir.vc.core:*verify-only*)) ,verify-only)
-            ;; (verifier-output-comment "Parsing units in package ~a~%" ,package-id)
-            )))
+  (let ((pkg (get-package-symbol package-id))
+        (real-uses (rewrite-uses-packages uses)))
+    (eval `(when (find-package ,pkg)
+             (unuse-package ',real-uses ,pkg)
+             (delete-package ,pkg)))
+    (eval `(defpackage ,pkg
+             ,@(mapcar #'(lambda (use) (list :use use)) real-uses)
+             (:documentation ,documentation)))
+    (let ((assume-verified-var (intern (symbol-name '#:*assume-verified*)
+                                       pkg))
+          (verify-only-var (intern (symbol-name '#:*verify-only*)
+                                   pkg)))
+      `(progn (defpackage ,pkg
+                (:use ,@real-uses)
+                (:documentation ,documentation))
+              (in-package ,pkg)
+              (defvar ,assume-verified-var)
+              (defvar ,verify-only-var)
+              (cl:mapcar (cl:lambda (f) (cl:push f ,assume-verified-var)) ,assume-verified)
+              (cl:mapcar (cl:lambda (f) (cl:push f ,verify-only-var)) ,verify-only)
+              ;; (verifier-output-comment "Parsing units in package ~a~%" ,package-id)
+              ))))
 
 (defmacro ir.vc.core:predicate (name typed-lambda-list &body expressions)
   (assert (not (cdr expressions)))
