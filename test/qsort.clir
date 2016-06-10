@@ -5,6 +5,72 @@
 		   :documentation "This is the quicksort function on the CLIR.")
 
 
+(define partition
+    ((v (array int)) (l int) (r int))
+    ((vres (array int)) (split int))
+  (declare (assertion
+            (precd (and
+                    (@ <= 0 l r)
+                    (@ < r (@ length v))))
+            (postcd (and (@ permut_sub v vres l (@ + 1 r))
+                         (@ <= l split r)
+                         (:forall ((k1 int))
+                                  (-> (@ <= 0 l)
+                                      (@ = (@ get v k1)
+                                           (@ get vres k1))))
+                         (:forall ((k2 int))
+                                  (-> (@ < r (@ length vres))
+                                      (@ = (@ get v k2)
+                                           (@ get vres k2))))
+                         (:forall ((j1 int))
+                                  (-> (and (@ <= l j1)
+                                           (@ < j1 split))
+                                      (@ <= (@ get vres j1)
+                                            (@ get vres split))))
+                         (:forall ((j2 int))
+                                  (-> (and (@ < split j2)
+                                           (@ <= j2 r))
+                                      (@ >= (@ get vres j2)
+                                            (@ get vres split))))))))
+
+  (letfun
+      ((theloop ((v int) (a (array int)) (l int) (r int) (i int) (m int)) ((ares (array int)) (ix int))
+         (declare (assertion)) ;; Needs invariant.
+         (let ((r1 int)) (@ - r 1)
+           (let ((b bool)) (@ <= i r1)
+             (case b
+               ((the bool false) (tuple a m))
+               ((the bool true)
+                (let ((a1 (array int)) (m1 int)) (@ k a i v m)
+                  (let ((i1 int)) (@ + i 1)
+                    (@ loop v a1 l r i1 m1)))))))
+         (let ((aj int)) (get a j)
+           (let ((b bool)) (@ <= aj pivot)
+             (case b
+               ((the bool false) i)
+               ((the bool true) (@ + 1 i))))))
+
+       (k ((a (array int)) (i int) (v int) (m int)) ((ares (array int)) (ix int))
+         (let ((ai int)) (@ get a i)
+           (let ((b bool)) (@ < ai v)
+             (case b
+               ((the bool false) (tuple a m))
+               ((the bool true)
+                (let ((m1 int)) (@ + m 1)
+                  (let ((ares (array int))) (@ swap a i m1)
+                    (tuple ares m1)))))))))
+    (let ((l1 int)) (@ + l 1)
+      (let ((b bool)) (@ < l1 r)
+        (case b
+          ((the bool false) a)
+          ((the bool true)
+           (let ((v int)) (@ get a l)
+             (let ((m int)) l
+               (let ((l1 int)) (@ + l 1)
+                 (let ((a1 (array int)) (m1 int)) (@ loop v a l r l1 l)
+                   (@ swap a1 l m1)))))))))))
+
+
 (define quicksort ((v (array int)) (n int)) ((vres (array int)))
   (declare
    (assertion
@@ -21,17 +87,17 @@
 	   (postcd (and (@ sorted_sub vsort i (@ + 1 j))
 			(@ permut_sub v vsort i (@ + 1 j))))))
 	 (let ((b bool)) (@ < i j)
-	      (case b
-		((the bool true) (@ f1 v i j))
-		((the bool false) v))))
+           (case b
+             ((the bool true) (@ f1 v i j))
+             ((the bool false) v))))
        (f1 ((v (array int)) (i int) (j int)) ((result (array int)))
 	 (let ((v1 (array int)) (p int)) (@ partition v i j)
-              (let ((p1 int)) (@ - p (the int 1))
-                   (let ((v2 (array int))) (@ qsort v1 i p1)
-                        (let ((p2 int)) (@ + p (the int 1))
-                             (@ qsort v2 p2 j)))))))
+           (let ((p1 int)) (@ - p (the int 1))
+             (let ((v2 (array int))) (@ qsort v1 i p1)
+               (let ((p2 int)) (@ + p (the int 1))
+                 (@ qsort v2 p2 j)))))))
     (let ((n1 int)) (@ - n (the int 1))
-         (@ qsort v (the int 0) n1))))
+      (@ qsort v (the int 0) n1))))
 
 
 ;; Local Variables:
