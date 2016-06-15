@@ -43,8 +43,8 @@
                ((the bool true)
                 (let ((a1 (array int)) (m1 int)) (@ k a i v m)
                   (let ((i1 int)) (@ + i 1)
-                    (@ loop v a1 l r i1 m1)))))))
-         (let ((aj int)) (get a j)
+                    (@ theloop v a1 l r i1 m1)))))))
+         (let ((aj int)) (@ get a j)
            (let ((b bool)) (@ <= aj pivot)
              (case b
                ((the bool false) i)
@@ -65,10 +65,9 @@
           ((the bool false) a)
           ((the bool true)
            (let ((v int)) (@ get a l)
-             (let ((m int)) l
-               (let ((l1 int)) (@ + l 1)
-                 (let ((a1 (array int)) (m1 int)) (@ loop v a l r l1 l)
-                   (@ swap a1 l m1)))))))))))
+             (let ((l1 int)) (@ + l 1)
+                  (let ((a1 (array int)) (m1 int)) (@ theloop v a l r l1 l)
+                       (@ swap a1 l m1))))))))))
 
 
 (define quicksort ((v (array int)) (n int)) ((vres (array int)))
