@@ -62,12 +62,12 @@
     (let ((l1 int)) (@ + l 1)
       (let ((b bool)) (@ < l1 r)
         (case b
-          ((the bool false) a)
+          ((the bool false) v)
           ((the bool true)
-           (let ((v int)) (@ get a l)
+           (let ((vl int)) (@ get v l)
              (let ((l1 int)) (@ + l 1)
-                  (let ((a1 (array int)) (m1 int)) (@ theloop v a l r l1 l)
-                       (@ swap a1 l m1))))))))))
+                  (let ((vx (array int)) (m1 int)) (@ theloop vl v l r l1 l)
+                       (@ swap vx l m1))))))))))
 
 
 (define quicksort ((v (array int)) (n int)) ((vres (array int)))
