@@ -32,7 +32,7 @@
                (number term)
                (symbol term)
                (string term)
-               (cons (case (car term)
+               (cons (case (first term)
                        (quote (second term))
                        (ir.vc.core:the (third term))
                        (ir.vc.core:@ (apply-predicate (rest term) recursive))

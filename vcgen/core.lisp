@@ -390,6 +390,9 @@ defun-ish body and the resulting body as values."
                            :name "let-binding")
                          ,@body)))))
 
+(defmacro ir.vc.core:tuple (&rest elements)
+  (maybe-macroexpand `(terminal-expression ,elements)))
+
 (defmacro ir.vc.core:@ (function-name &rest rest)
   "We will use this macro to call all further functions. Depending
   on whether they already have pre/post conditions on them, we will

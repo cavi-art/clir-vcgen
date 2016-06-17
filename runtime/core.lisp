@@ -47,6 +47,7 @@
   (:import-from :cl :the :type)
   (:export :the :type)
   (:export :default) ;; For the case
+  (:export :tuple) ;; For n-tuple return values
 
   ;; Our basic macro for defining everything else.
   (:export :verification-unit)
@@ -207,8 +208,12 @@ functions."
   "Lexically binds a var, syntax is: (let var val body-form). It can
 destructure tuples as (let (a b) (list a b) a)"
   (assert (not (cdr body))) ;; Only one expression
-  `(multiple-value-bind ,(drop-types typed-var-list) (the (values ,@(get-types typed-var-list)) ,(from-clir val))
+  `(destructuring-bind ,(drop-types typed-var-list) (the (values ,@(get-types typed-var-list)) ,(from-clir val))
      ,(from-clir (car body))))
+
+(defmacro ir.rt.core:tuple (&rest vars)
+  "A tuple is just a host cons list."
+  `(list ,@vars))
 
 (defun from-clir-case-alt (pattern)
   (typecase pattern
