@@ -36,19 +36,19 @@
   (letfun
       ((theloop ((v int) (a (array int)) (l int) (r int) (i int) (m int)) ((ares (array int)) (ix int))
          (declare (assertion)) ;; Needs invariant.
-         (let ((r1 int)) (@ - r 1)
+         (let ((r1 int)) (@ - r (the int 1))
            (let ((b bool)) (@ <= i r1)
              (case b
                ((the bool false) (tuple a m))
                ((the bool true)
                 (let ((a1 (array int)) (m1 int)) (@ k a i v m)
-                  (let ((i1 int)) (@ + i 1)
+                  (let ((i1 int)) (@ + i (the int 1))
                     (@ theloop v a1 l r i1 m1)))))))
          (let ((aj int)) (@ get a j)
            (let ((b bool)) (@ <= aj pivot)
              (case b
                ((the bool false) i)
-               ((the bool true) (@ + 1 i))))))
+               ((the bool true) (@ + (the int 1) i))))))
 
        (k ((a (array int)) (i int) (v int) (m int)) ((ares (array int)) (ix int))
          (let ((ai int)) (@ get a i)
@@ -56,16 +56,16 @@
              (case b
                ((the bool false) (tuple a m))
                ((the bool true)
-                (let ((m1 int)) (@ + m 1)
+                (let ((m1 int)) (@ + m (the int 1))
                   (let ((ares (array int))) (@ swap a i m1)
                     (tuple ares m1)))))))))
-    (let ((l1 int)) (@ + l 1)
+    (let ((l1 int)) (@ + l (the int 1))
       (let ((b bool)) (@ < l1 r)
         (case b
           ((the bool false) v)
           ((the bool true)
            (let ((vl int)) (@ get v l)
-             (let ((l1 int)) (@ + l 1)
+             (let ((l1 int)) (@ + l (the int 1))
                   (let ((vx (array int)) (m1 int)) (@ theloop vl v l r l1 l)
                        (@ swap vx l m1))))))))))
 
@@ -102,5 +102,5 @@
 ;; Local Variables:
 ;; mode: common-lisp
 ;; coding: utf-8
-;; slime-buffer-package: ir\.vc\.core
+;; slime-buffer-package: "ir.vc.core"
 ;; End:
