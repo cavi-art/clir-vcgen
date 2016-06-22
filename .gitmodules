@@ -1,0 +1,3 @@
+[submodule "clir2mlw"]
+	path = clir2mlw
+	url = https://github.com/cavi-art/cl-clir2mlw.git
