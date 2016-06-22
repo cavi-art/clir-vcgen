@@ -10,12 +10,12 @@
     ((vres (array int)) (split int))
   (declare (assertion
             (precd (and
-                    (@ <= 0 l r)
+                    (@ <= (the int 0) l r)
                     (@ < r (@ length v))))
-            (postcd (and (@ permut_sub v vres l (@ + 1 r))
+            (postcd (and (@ permut_sub v vres l (@ + (the int 1) r))
                          (@ <= l split r)
                          (:forall ((k1 int))
-                                  (-> (@ <= 0 l)
+                                  (-> (@ <= (the int 0) l)
                                       (@ = (@ get v k1)
                                            (@ get vres k1))))
                          (:forall ((k2 int))
@@ -66,14 +66,14 @@
           ((the bool true)
            (let ((vl int)) (@ get v l)
              (let ((l1 int)) (@ + l (the int 1))
-                  (let ((vx (array int)) (m1 int)) (@ theloop vl v l r l1 l)
-                       (@ swap vx l m1))))))))))
+               (let ((vx (array int)) (m1 int)) (@ theloop vl v l r l1 l)
+                 (@ swap vx l m1))))))))))
 
 
 (define quicksort ((v (array int)) (n int)) ((vres (array int)))
   (declare
    (assertion
-    (precd (and (@ < 0 (@ length v))
+    (precd (and (@ < (the int 0) (@ length v))
                 (@ = n (@ length v))))
     (postcd (and (@ sorted vres)
 		 (@ permut_all v vres)))))
@@ -81,10 +81,10 @@
       ((qsort ((v (array int)) (i int) (j int)) ((vsort (array int)))
 	 (declare
 	  (assertion
-	   (precd (and (@ <= 0 i j)
+	   (precd (and (@ <= (the int 0) i j)
                        (@ < j (@ length v))))
-	   (postcd (and (@ sorted_sub vsort i (@ + 1 j))
-			(@ permut_sub v vsort i (@ + 1 j))))))
+	   (postcd (and (@ sorted_sub vsort i (@ + (the int 1) j))
+			(@ permut_sub v vsort i (@ + (the int 1) j))))))
 	 (let ((b bool)) (@ < i j)
            (case b
              ((the bool true) (@ f1 v i j))
