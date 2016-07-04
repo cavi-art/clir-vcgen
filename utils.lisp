@@ -21,8 +21,14 @@
 (defpackage :ir.utils
   (:use :cl)
   (:export :protect-package :with-changed-package :with-throwaway-package)
-  (:export :delete-package-recursive :get-package-symbol))
+  (:export :delete-package-recursive :get-package-symbol)
+  (:export :drop-types))
+
 (in-package :ir.utils)
+
+(defun drop-types (typed-var-list)
+  (mapcar #'car typed-var-list))
+
 
 (defun get-package-symbol (input-package-symbol &optional (pkg "KEYWORD"))
   ;; (return-from get-package-symbol input-package-symbol)

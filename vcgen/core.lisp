@@ -320,9 +320,6 @@ defun-ish body and the resulting body as values."
      ,@full-body))
 
 
-(defun drop-types (typed-var-list)
-  (mapcar #'car typed-var-list))
-
 (defun drop-types-from-case-pattern (pattern)
   (typecase pattern
     (symbol pattern)
