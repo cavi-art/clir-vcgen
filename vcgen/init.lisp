@@ -18,19 +18,20 @@
 ;;; You should have received a copy of the GNU Affero General Public License
 ;;; along with CAVIART-VCGEN.  If not, see <http://www.gnu.org/licenses/>.
 
-
 (cl:in-package :cl-user)
 (require "asdf")
-(push (directory-namestring *load-pathname*) asdf:*central-registry*)
+;; (push (directory-namestring *load-pathname*) asdf:*central-registry*)
 
 (defpackage :ir.vc.load
-  (:use :cl))
+  (:use :cl :asdf))
 
 (cl:in-package :ir.vc.load)
-(eval-when (:compile-toplevel :load-toplevel)
-  (ql:quickload 'qlot))
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (ql:quickload :qlot))
 
-(qlot:install 'clir-vcgen)
+(load "clir-vcgen.asd")
+(ql:quickload 'prove)
+;; (qlot:install 'clir-vcgen)
 (qlot:quickload 'clir-vcgen)
 
 
