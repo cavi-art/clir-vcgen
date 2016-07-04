@@ -35,21 +35,28 @@
 
 ;;; TODO: Handle lettype and the like.
 
+(defun maybe-macroexpand (form)
+  form)
+
 (defun get-precondition (function-definition)
-  (let* ((body (function-body function-definition))
-         (declarations (cdr (assoc 'declare body)))
-         (assertions (cdr (assoc 'assertion declarations)))
-         (precd (assoc 'precd assertions)))
-    (when precd
-      (cadr precd))))
+  (let ((body (function-body function-definition)))
+    (when (consp (first body))
+      (let* ((body (function-body function-definition))
+             (declarations (cdr (assoc 'declare body)))
+             (assertions (cdr (assoc 'assertion declarations)))
+             (precd (assoc 'precd assertions)))
+        (when precd
+          (cadr precd))))))
 
 (defun get-postcondition (function-definition)
-  (let* ((body (function-body function-definition))
-         (declarations (cdr (assoc 'declare body)))
-         (assertions (cdr (assoc 'assertion declarations)))
-         (postcd (assoc 'postcd assertions)))
-    (when postcd
-      (cadr postcd))))
+  (let ((body (function-body function-definition)))
+    (when (consp (first body))
+      (let* ((body (function-body function-definition))
+             (declarations (cdr (assoc 'declare body)))
+             (assertions (cdr (assoc 'assertion declarations)))
+             (postcd (assoc 'postcd assertions)))
+        (when postcd
+          (cadr postcd))))))
 
 (defvar *external-functions* nil)
 
@@ -116,13 +123,16 @@
 (defun remove-decls (body &optional declarations)
   "Gets the `declare'-d and docstring forms (if there are any) of a
 defun-ish body and the resulting body as values."
-  (declare (type list body declarations))
-  (let ((form (car body)))
-    (typecase form
-      ((or symbol nil) (values body (reverse declarations)))
-      (cons (if (eq (car form) 'declare)
-                (remove-decls (cdr body) (append (cdr form) declarations))
-                (values body (reverse declarations)))))))
+  (declare (type list declarations)
+           (type (or list symbol) body))
+  (if (consp body)
+      (let ((form (car body)))
+        (typecase form
+          ((or symbol nil) (values body (reverse declarations)))
+          (cons (if (eq (car form) 'declare)
+                    (remove-decls (cdr body) (append (cdr form) declarations))
+                    (values body (reverse declarations))))))
+      body))
 
 ;; TODO at some point, replace function "list" with a proper struct
 (defun function-body (function-definition)
@@ -292,7 +302,7 @@ defun-ish body and the resulting body as values."
                    (with-current-function ',function-name
                      (with-premise ((@precd ',function-name ',(drop-types typed-lambda-list))
                                     :name ,(symbol-name function-name))
-                       ,@body)))))))))
+                       ,@ (mapcar #'maybe-macroexpand body))))))))))
 
 (defmacro ir.vc.core:letfun (definitions
                              &body full-body)
@@ -313,7 +323,7 @@ defun-ish body and the resulting body as values."
                    (with-variables ,typed-lambda-list
                      (with-premise ((@precd ',function-name)
                                     :name ,(format nil "~A_" function-name))
-                       ,@(remove-decls inner-body)))))))
+                       ,@(mapcar #'maybe-macroexpand (mapcar #'remove-decls inner-body))))))))
         definitions)
 
      ;; We also need to verify the main toplevel function
@@ -337,7 +347,7 @@ defun-ish body and the resulting body as values."
                       :name (format nil "case_~D" ,idx))
          (assume-binding (,(drop-types-from-case-pattern pattern) ',case-condition
                            :name "case-binding")
-                         ,form)))))
+           ,(maybe-macroexpand form))))))
 
 (defun case-default-p (alt)
   (eq (car alt)
@@ -349,7 +359,7 @@ defun-ish body and the resulting body as values."
         `(with-premise ((list 'ir.vc.core:@ '<> ,(drop-types-from-case-pattern pattern) ',condition))
            ,(case-alternative-default condition default-alternative (cdr alternative-list))))
       (let ((default-body (second default-alternative)))
-        default-body)))
+        (maybe-macroexpand default-body))))
 
 (defmacro ir.vc.core:case (condition &body alternative-list)
   "A `ir.vc.core:CASE' with n alternatives will generate n goals, one
@@ -368,7 +378,7 @@ defun-ish body and the resulting body as values."
                    ,(case-alternative-default condition default-alternative non-default-alternative-list)))))))
 
 (defmacro ir.vc.core:the (expr-type value)
-  `(terminal-expression (,value) :type ,expr-type))
+  (maybe-macroexpand `(terminal-expression (,value) :type ,expr-type)))
 
 (defmacro maybe-output-precd-goal (val &key name)
   (when (@-p val)
@@ -379,13 +389,17 @@ defun-ish body and the resulting body as values."
    destructure tuples as (let (a b) (list a b) a)"
   (assert (not (cdr body))) ;; Only one expression
   `(progn
-     (maybe-output-precd-goal ,val :name "let rhs precondition")
+     ,(maybe-macroexpand `(maybe-output-precd-goal ,val :name "let rhs precondition"))
      (with-variables ,typed-var-list
-       (with-premise ((@precd ',(cadr val) ',(cddr val))
-                      :name "let rhs precondition")
-         (assume-binding (,(drop-types typed-var-list) ,val
-                           :name "let-binding")
-                         ,@body)))))
+       ,(if (@-p val)
+            `(with-premise ((@precd ',(cadr val) ',(cddr val))
+                            :name "let rhs precondition")
+               (assume-binding (,(drop-types typed-var-list) ,val
+                                 :name "let-binding")
+                 ,@(mapcar #'maybe-macroexpand body)))
+            `(assume-binding (,(drop-types typed-var-list) ,val
+                               :name "let-binding")
+               ,@(mapcar #'maybe-macroexpand body))))))
 
 (defmacro ir.vc.core:tuple (&rest elements)
   (maybe-macroexpand `(terminal-expression ,elements)))
@@ -406,8 +420,8 @@ defun-ish body and the resulting body as values."
            (if ,postcd
                (with-premise (,postcd
                               :name ,(format nil "~(~A~) postcondition" function-name))
-                 (terminal-expression ((ir.vc.core:@ ,function-name ,@(mapcar #'macroexpand-1 rest))) :norename t))
-               (terminal-expression ((ir.vc.core:@ ,function-name ,@(mapcar #'macroexpand-1 rest))) :norename t)))))))
+                 ,(maybe-macroexpand `(terminal-expression ((ir.vc.core:@ ,function-name ,@(mapcar #'macroexpand-1 rest))) :norename t)))
+               ,(maybe-macroexpand `(terminal-expression ((ir.vc.core:@ ,function-name ,@(mapcar #'macroexpand-1 rest))) :norename t))))))))
 
 
 (defun output-goal (target &key name)
