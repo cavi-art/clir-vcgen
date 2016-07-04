@@ -33,11 +33,11 @@
        (f2 ((V (loc (array int))) (I int) (H heap)) ((f2 heap))
 	 (declare
 	  (assertion
-	   (precd (:forall ((E (array int)))
+	   (precd (forall ((E (array int)))
 			   (-> (@ = (@ deref H V) E)
 			       (and (@ sorted_sub E 0 I)
 				    (@ <= 0 I)))))
-	   (postcd (:forall ((E (array int)))
+	   (postcd (forall ((E (array int)))
 			    (-> (@ = (@ deref f2 V) E)
 				(@ sorted E))))))
 	 (let ((X1 int)) (@ len-array-heap H V)
@@ -53,7 +53,7 @@
        (f4 ((V (loc (array int))) (I int) (J int) (H heap)) ((f4 heap))
 	 (declare
 	  (assertion
-	   (precd (:forall ((E (array int)))
+	   (precd (forall ((E (array int)))
 			   (-> (@ = (@ deref H V) E)
 			       (and (@ sorted_sub E 0 (@ + J 1))
 				    (@ sorted_sub E (@ + J 1) (@ + I 1))

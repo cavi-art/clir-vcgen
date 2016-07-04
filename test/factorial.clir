@@ -24,7 +24,7 @@
 		   (@ * n f1))))))
 
 ;; ;; We want to generate this
-;; '(:forall ((n int))
+;; '(forall ((n int))
 ;;   (->
 ;;    (@ >= n 0)
 ;;    (and
@@ -32,10 +32,10 @@
 ;; 	(@ = result 1)
 ;; 	(@ = result (@ fact n)))
 ;;     (-> (@ <> n 0)
-;; 	(:forall ((n1 int))
+;; 	(forall ((n1 int))
 ;; 		 (->
 ;; 		  (@ = n1 (@ - n 1))
-;; 		  (:forall ((f1 int))
+;; 		  (forall ((f1 int))
 ;; 			   (-> (@ = f1 (@ fact n1))
 ;; 			       (@ = result (@ * n f1))
 ;; 			       (@ = result (@ fact n))))))))))
