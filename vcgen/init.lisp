@@ -23,6 +23,16 @@
 (require "asdf")
 (push (directory-namestring *load-pathname*) asdf:*central-registry*)
 
-(cl:in-package :asdf-user)
-(oos 'load-op 'clir-vcgen)
+(defpackage :ir.vc.load
+  (:use :cl))
+
+(cl:in-package :ir.vc.load)
+(eval-when (:compile-toplevel :load-toplevel)
+  (ql:quickload 'qlot))
+
+(qlot:install 'clir-vcgen)
+(qlot:quickload 'clir-vcgen)
+
+
+
 
