@@ -3,6 +3,7 @@
     :version "0.0.1"
     :author "Santiago Saavedra <s.saavedra@fdi.ucm.es>"
     :licence "AGPL3"
+    :depends-on (:printv)
     :components ((:file "../cl-reexport")
                  (:file "../utils" :depends-on ("../cl-reexport"))
                  (:file "packages")
@@ -12,6 +13,6 @@
                  (:file "assemble" :depends-on ("core"))
                  (:file "formatter" :depends-on ("core"))
                  (:file "user" :depends-on ("core"))
-                 (:file "vc-gen" :depends-on ("core" "../utils"))
+                 (:file "vc-gen" :depends-on ("core" "builtins" "formatter" "assemble" "../utils" "user"))
                  ))
 
