@@ -97,13 +97,18 @@ array.IntArraySorted~% use import array.ArrayPermut~%~{~A~^~%~} ~%~%end~%"
                                 `(funcall (find-symbol ,(symbol-name function) (find-package ,package)))
                                 (list function)))))
 
-
 ;;; How-to test:
 ;;; To load a file (and inspect the second toplevel sexp):
-;; (cadr (load-file (easy-file qsort)))
+;; (cadr (read-file (easy-file qsort)))
 
 ;;; To throw it to Why3, just put (see `(documentation 'easy-test)')
 ;; (easy-test qsort quicksort 'qsort)
+;; (easy-test qsort partition 'qsort)
+
+
+
+;;(cadr (read-file (easy-file qsort)))
+
 
 ;; (easy-test inssort inssort "inssort")
 ;; (easy-test factorial factorial 'factorial)
