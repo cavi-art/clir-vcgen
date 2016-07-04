@@ -164,8 +164,7 @@ program."
                                premise)
               (has-placeholder :postcd_placeholder
                                premise)))
-  (butlast (cons (first premise)
-                 (cddr premise))))
+  (butlast (cddr premise)))
 
 
 (defun patch-hole (premise pre post)
