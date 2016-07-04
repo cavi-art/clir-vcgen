@@ -29,6 +29,8 @@
   ;; We can use the same `the' and `type' as CL.
   (:export :the :type)
 
+  (:export :tuple)
+
   ;; Our basic macro for defining everything else.
   (:export :verification-unit)
 
@@ -57,14 +59,12 @@
 
 
 (defpackage :ir.vc.builtins
-  (:use :ir.vc.core :common-lisp)
+  (:use :ir.vc.core :ir.utils :common-lisp)
   (:shadow + - * / < <= > >=)
   (:export + - * / < <= > >= =)
 
   (:shadow :length)
   (:export :length)
-
-  (:export :partition) ; Temporarily here
 
   (:shadowing-import-from :common-lisp :let :let* :case :load)
   (:shadowing-import-from :common-lisp :type :the)
