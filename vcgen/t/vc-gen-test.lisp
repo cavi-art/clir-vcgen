@@ -78,12 +78,12 @@
 
 (let ((protogoals (list
                    (list
-                    (make-premise :formula '(:forall (a int)) :name "var intro")
+                    (make-premise :formula '(forall (a int)) :name "var intro")
                     (make-premise :formula 'true :name "precondition 2")
                     (make-premise :formula '(:postcd_placeholder f))
                     (make-premise :formula '(@ = a a) :name "1"))
                    (list
-                    (make-premise :formula '(:forall (a int)) :name "f var intro")
+                    (make-premise :formula '(forall (a int)) :name "f var intro")
                     (make-premise :formula '(:precd_placeholder f))
                     (make-premise :formula '(@ = 1 1) :name "inner f")
                     (make-premise :formula '(:postcd_placeholder f))))))

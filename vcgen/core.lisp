@@ -181,7 +181,7 @@ defun-ish body and the resulting body as values."
       (labels ((symbol-macroletize (typed-var)
                  (destructuring-bind (var-name var-type) typed-var
                    `(,var-name (terminal-expression (,var-name) :type ,var-type)))))
-        `(with-premise ((list :forall ',typed-variable-list))
+        `(with-premise ((list 'forall ',typed-variable-list))
            (symbol-macrolet ,(mapcar #'symbol-macroletize typed-variable-list)
              ,@body)))
       `(progn ,@body)))
@@ -416,7 +416,7 @@ defun-ish body and the resulting body as values."
 
        ;; (with-premise (,precd))
        (macrolet ((ir.vc.core:the (type value) (declare (ignore type)) value))
-         (with-premise ((list :forall (get-current-typed-result-list)))
+         (with-premise ((list 'forall (get-current-typed-result-list)))
            (if ,postcd
                (with-premise (,postcd
                               :name ,(format nil "~(~A~) postcondition" function-name))

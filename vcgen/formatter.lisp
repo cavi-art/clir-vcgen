@@ -58,7 +58,7 @@
       (string formula)
       (number formula)
       (cons (case (car formula)
-              (:forall (format nil "forall ~:{~A:~A~:^,~}. ~A" (second formula) (if (third formula)
+              (forall (format nil "forall ~:{~A:~A~:^,~}. ~A" (second formula) (if (third formula)
                                                                                     (clir-formula-to-string (third formula))
                                                                                     "")))
               (-> (format nil "~{(~A)~^ -> ~}" (mapcar #'clir-formula-to-string (rest formula))))
@@ -73,7 +73,7 @@
 (defun clir-premises-to-string (premises)
   (flet ((not-quantifier (premise)
            (or (not (consp premise))
-               (not (member (car premise) (list :forall :exists))))))
+               (not (member (car premise) (list 'forall 'exists))))))
     (when premises
       (concatenate 'string (format nil "~10< \"~A\" ~>~(~A~)~@[~&~I -> ~]"
                                    (premise-name (first premises))
