@@ -23,7 +23,7 @@
   (declare
    (assertion
     (precd true)
-    (postcd (:forall ((E (array int)))
+    (postcd (forall ((E (array int)))
 		     (-> (@ = E (@ deref inssort V))
 			 (@ sorted E))))))
   (letfun
