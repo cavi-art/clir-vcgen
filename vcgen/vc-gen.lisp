@@ -29,6 +29,7 @@
   (:export :easy-test :easy-protogoals :easy-goals))
 (in-package :ir.vc)
 
+(defvar *why3-executable* "why3")
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defparameter *clir-extension* ".clir"
@@ -68,7 +69,7 @@ array.IntArraySorted~% use import array.ArrayPermut~%~{~A~^~%~} ~%~%end~%"
 (defun test-clir (clir-file f)
   (generate-theory clir-file f)
   (let ((prover-file (prover-file-from-clir clir-file)))
-    (asdf::run-program (list "why3" "ide" (namestring prover-file)))))
+    (asdf::run-program (list *why3-executable* "ide" (namestring prover-file)))))
 
 (defmacro easy-file (basename &optional (extension *clir-extension*))
   "Returns the path to a file in ../test/basename.clir"
@@ -127,7 +128,7 @@ array.IntArraySorted~% use import array.ArrayPermut~%~{~A~^~%~} ~%~%end~%"
 ;;   (qsort::quicksort))
 
 ;;; To just show the goals
-;; (easy-goals inssort |inssort|::inssort)
+;; (easy-protogoals inssort inssort "inssort")
 
 ;;; When the package name is in lowercase you need to do this:
 ;; (easy-test inssort inssort "inssort")
