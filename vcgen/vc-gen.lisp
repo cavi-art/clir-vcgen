@@ -30,6 +30,7 @@
 (in-package :ir.vc)
 
 (defvar *why3-executable* "why3")
+(defparameter *why3-executable* #P"~/usr/why3-0.87.1/bin/why3")
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defparameter *clir-extension* ".clir"
@@ -75,6 +76,12 @@ array.IntArraySorted~% use import array.ArrayPermut~%~{~A~^~%~} ~%~%end~%"
   "Returns the path to a file in ../test/basename.clir"
   (format nil "../test/~(~A~)~A" (symbol-name basename) extension))
 
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defun easy-funcall% (function package)
+    (if package
+        `(funcall (find-symbol ,(symbol-name function) (find-package ,package)))
+        (list function))))
+
 (defmacro easy-test (basename function &optional package only-theory)
   "Tests a file. The \"basename\" must be the name of the file without
   the ending .clir (or whatever `*clir-extension*' is set). See the
@@ -87,16 +94,12 @@ array.IntArraySorted~% use import array.ArrayPermut~%~{~A~^~%~} ~%~%end~%"
                               'generate-theory
                               'test-clir)))
     `(,testing-function (pathname (easy-file ,basename))
-                        (lambda () ,(if package
-                                        `(funcall (find-symbol ,(symbol-name function) (find-package ,package)))
-                                        (list function))))))
+                        (lambda () ,(easy-funcall% function package)))))
 
 (defmacro easy-protogoals (basename function &optional package)
   `(progn
      (load-eval-file (pathname (easy-file ,basename)))
-     (clir-goals-to-string ,(if package
-                                `(funcall (find-symbol ,(symbol-name function) (find-package ,package)))
-                                (list function)))))
+     (clir-goals-to-string ,(easy-funcall% function package))))
 
 ;;; How-to test:
 ;;; To load a file (and inspect the second toplevel sexp):
@@ -129,6 +132,7 @@ array.IntArraySorted~% use import array.ArrayPermut~%~{~A~^~%~} ~%~%end~%"
 
 ;;; To just show the goals
 ;; (easy-protogoals inssort inssort "inssort")
+
 
 ;;; When the package name is in lowercase you need to do this:
 ;; (easy-test inssort inssort "inssort")

@@ -40,7 +40,19 @@
                    (comment premise-comment)
                    (name premise-name)
                    (metadata premise-meta)) premise
-    (format stream "#!P(~S, ~S, ~S, ~S)" name comment metadata formula)))
+    (format stream "#!P(~S ~S ~S ~S)" name comment metadata formula)))
+
+(defun premise-reader (stream subsubchar arg)
+  (declare (ignore subsubchar arg))
+  (destructuring-bind (name comment metadata formula)
+      (read stream)
+    (make-premise :name name
+                  :comment comment
+                  :meta metadata
+                  :formula formula)))
+
+(set-sharpsign-exclam-dispatch-character #\P #'premise-reader)
+
 
 (defun premise-list-p% (elt)
   (typecase elt

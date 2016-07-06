@@ -1,5 +1,12 @@
+(defpackage :ir.vc.reader
+  (:use :cl)
+  (:export :set-sharpsign-exclam-dispatch-character
+           :|set-#!-dispatch-character|))
+
 (defpackage :ir.vc.formulae
-  (:use :cl :ir.utils)
+  (:use :cl
+        :ir.utils
+        :ir.vc.reader)
 
   (:import-from :common-lisp #:and #:or)
 
