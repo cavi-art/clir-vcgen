@@ -40,16 +40,30 @@
                    (comment premise-comment)
                    (name premise-name)
                    (metadata premise-meta)) premise
-    (format stream "#!P(~S ~S ~S ~S)" name comment metadata formula)))
+    ;; (format stream "#!P(~S ~S ~S ~S)" name comment metadata formula)
+    (format stream "~@<~_~I(make-premise ~4I~_:name ~S ~_~
+                    ~@[:comment ~S~_ ~]~
+                    ~@[:meta ~S~_ ~]~
+                    :formula '~S)~:>"
+            name
+            (unless (string= comment "")
+              comment)
+            metadata
+            formula)))
 
 (defun premise-reader (stream subsubchar arg)
   (declare (ignore subsubchar arg))
-  (destructuring-bind (name comment metadata formula)
-      (read stream)
-    (make-premise :name name
-                  :comment comment
-                  :meta metadata
-                  :formula formula)))
+  (let ((read-stream (read stream t nil t)))
+    (unless read-stream
+      (read-line stream)
+      (error "Somehow this is nil. Next is ~S" (read-line stream)))
+    (destructuring-bind (name comment metadata formula)
+        read-stream
+      `(make-premise
+        :name ,name
+        :comment ,comment
+        :meta ',metadata
+        :formula ',formula))))
 
 (set-sharpsign-exclam-dispatch-character #\P #'premise-reader)
 
