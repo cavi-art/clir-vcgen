@@ -36,7 +36,7 @@ pre/postconditions so that this function result can be used in a
            (find-goal-possibilities (protogoal)
              (mapcar #'find-premise-possibilities protogoal))
            (cartesian-possibilities (protogoal-sublists)
-             ;; We now depend on alexandria
+             ;; We depend on alexandria for this
              (mapcar (lambda (l) (apply #'append l))
                      (apply #'alexandria:map-product #'list protogoal-sublists)))
            (merge-it (protogoal)
@@ -134,7 +134,6 @@ program."
 
 (defun find-all-in-hole-haystack (premise haystack)
   (let ((function-name (second (premise-formula premise))))
-    function-name haystack
     (or (remove-if-not (lambda (maybe-needle)
                          (eq (second (premise-formula (second maybe-needle)))
                              function-name))
@@ -170,7 +169,6 @@ program."
         (removal-function (case (first (premise-formula premise))
                             (:precd_placeholder #'remove-first-placeholder)
                             (:postcd_placeholder #'remove-both-placeholders))))
-    ;; (break "Removing hole of type ~A from premise ~A. Got ~A candidates." (caadr premise) premise (length (find-all-in-hole-haystack premise hole-haystack)))
     (mapcar
      #'(lambda (subst)
          (rename-symbol-list (premise-formula premise)
