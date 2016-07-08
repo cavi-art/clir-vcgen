@@ -29,21 +29,18 @@
 postconditions previously synthetized. Returns a closure with the
 pre/postconditions so that this function result can be used in a
 `mapcar' of the goals."
-  (labels ((merge-it (protogoal)
-             (when protogoal
-
-               (if (hole-p (car protogoal))
-
-                   ;; Patch-hole returns the list of premises for that
-                   ;; hole, so we need to use `APPEND' instead of just
-                   ;; `CONS'ing.
-                   (append
-                    ;; (list (car protogoal))
-                    (apply #'append (patch-hole (car protogoal) synthetic-preconditions synthetic-postconditions))
-                    (merge-it (cdr protogoal)))
-
-                   (cons (car protogoal)
-                         (merge-it (cdr protogoal)))))))
+  (labels ((find-premise-possibilities (premise)
+             (if (hole-p premise)
+                 (patch-hole premise synthetic-preconditions synthetic-postconditions)
+                 (list (list premise))))
+           (find-goal-possibilities (protogoal)
+             (mapcar #'find-premise-possibilities protogoal))
+           (cartesian-possibilities (protogoal-sublists)
+             ;; We now depend on alexandria
+             (mapcar (lambda (l) (apply #'append l))
+                     (apply #'alexandria:map-product #'list protogoal-sublists)))
+           (merge-it (protogoal)
+             (cartesian-possibilities (find-goal-possibilities protogoal))))
     #'merge-it))
 
 (defun synthetic-preconditions (protogoals)
@@ -75,10 +72,10 @@ program."
          (protogoals-with-holes (remove-if #'synthetic-postcondition-p
                                            (remove-if #'proper-goal-p protogoals))))
     (progn
-      (append
-       proper-goals
-       (mapcar (merge-protogoal synthetic-preconditions synthetic-postconditions)
-               protogoals-with-holes)))))
+      (apply #'append
+             proper-goals
+             (mapcar (merge-protogoal synthetic-preconditions synthetic-postconditions)
+                     protogoals-with-holes)))))
 
 
 
@@ -166,8 +163,6 @@ program."
                                premise)))
   (butlast (cddr premise)))
 
-
-;; FIXME
 (defun patch-hole (premise pre post)
   (let ((hole-haystack (case (first (premise-formula premise))
                          (:precd_placeholder pre)
