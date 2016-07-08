@@ -30,11 +30,7 @@
                                  (make-premise :name "f1 postcondition" :formula
                                                '(:postcd_placeholder f1 ((v i j) (v i j)) ((result) (vsort))))
                                  (make-premise :name "postcondition" :formula
-                                               '(and
-                                                 (@ sorted_sub vsort i
-                                                  (@ + (vc:the vc:int 1) j))
-                                                 (@ permut_sub v vsort i
-                                                  (@ + (vc:the vc:int 1) j)))))
+                                               'some-f1-postcondition-formula))
                            (list
                             (make-premise :name nil :formula
                                           '(forall
@@ -49,11 +45,7 @@
                             (make-premise :name "partition hole end" :formula
                                           '(:postcd_placeholder partition (nil (v i j)) (nil (v1 p))))
                             (make-premise :name "something after partition" :formula
-                                          '(and
-                                            (@ sorted_sub result p2
-                                             (@ + (vc:the vc:int 1) j))
-                                            (@ permut_sub v2 result p2
-                                             (@ + (vc:the vc:int 1) j))))
+                                          'after-partition-formula-in-f1)
                             (make-premise :name "postcondition" :formula
                                           '(:postcd_placeholder f1 ((v i j) nil) ((result) nil))))
                            (list
@@ -64,25 +56,21 @@
                             (make-premise :name "f1_" :formula
                                           '(:precd_placeholder f1 ((v i j) nil)))
                             (make-premise :name "other formula with no partition" :formula
-                                          '(forall ((v1 (array vc:int)) (p vc:int))))
+                                          'no-partition-formula)
                             (make-premise :name "something after formula" :formula
-                                          '(and
-                                            (@ sorted_sub result p2
-                                             (@ + (vc:the vc:int 1) j))
-                                            (@ permut_sub v2 result p2
-                                             (@ + (vc:the vc:int 1) j))))
+                                          'something-after-no-partition)
                             (make-premise :name "postcondition" :formula
                                           '(:postcd_placeholder f1 ((v i j) nil) ((result) nil))))
                            )))
     (let ((post (synthetic-postconditions protogoals))
           (computed-goals (protogoals-to-goals protogoals)))
-      (is (length computed-goals)
-          2
-          "There should two goals in this example")
       (is (length post)
           2
-          "There are two different postconditions in this example"))))
-
+          "There are two different postconditions in this example")
+      (is (length computed-goals)
+          2
+          "There should two goals in this example"))))
 
 
 (finalize)
+
