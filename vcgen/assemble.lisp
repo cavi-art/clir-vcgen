@@ -167,6 +167,7 @@ program."
   (butlast (cddr premise)))
 
 
+;; FIXME
 (defun patch-hole (premise pre post)
   (let ((hole-haystack (case (first (premise-formula premise))
                          (:precd_placeholder pre)
