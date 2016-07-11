@@ -64,15 +64,21 @@
 (defvar *verification-unit-use-list* nil)
 
 (defun rewrite-uses-packages (use-list)
-  "Rewrites the USE packages from use-list so that they are now
-  dependant on VC/RT sub-packages. We also substitute the toplevel :IR
-  package for :IR.VC.CORE and :IR.VC.BUILTINS."
+  "Rewrites the USE packages from use-list.
+
+  Substitutes the toplevel :IR package for :IR.VC.CORE
+  and :IR.VC.BUILTINS. For other packages, removes those which cannot
+  be found in the lisp image (as they may indicate other flags which
+  are not necessarily lisp packages)."
   (flet ((rewrite-use-package (pkg)
            (if (equal (string-downcase (symbol-name pkg))
                       "ir")
                '(:ir.vc.core :ir.vc.builtins)
-               (list (make-symbol (format nil "~A.VC" pkg))))))
-    (apply #'append (mapcar #'rewrite-use-package use-list))))
+               (list pkg))))
+    (remove-if-not #'find-package
+                   (apply #'append
+                          (mapcar #'rewrite-use-package
+                                  use-list)))))
 
 ;;;; Grammar follows 
 (defmacro ir.vc.core:verification-unit (package-id &key sources uses documentation verify-only assume-verified)
