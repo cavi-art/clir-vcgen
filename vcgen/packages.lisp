@@ -47,7 +47,9 @@
   (:export :int)
   (:export :bool :true :false)
 
-  (:export :*assume-verified* :*verify-only* :*external-functions* :*goal-set-hook* :*default-goal-set-hook*)
+  (:export :*assume-verified* :*verify-only* :*external-functions* :*goal-set-hook*
+           :*default-goal-set-hook*
+           #:*verification-unit-name* #:*verification-unit-use-list*)
 
   ;; Our own DSL keywords
   (:export :define :lettype :letvar :letconst :let :let* :letfun :case :default "@" "@@")

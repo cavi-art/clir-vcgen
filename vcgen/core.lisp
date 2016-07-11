@@ -28,6 +28,7 @@
   for later use in a proof assistant.")
   (:use :cl :ir.utils :ir.vc.formulae)
   (:import-from :ir.vc.core :assertion :precd :postcd :default :*external-functions* :true :false)
+  (:import-from :ir.vc.core #:*verification-unit-name* #:*verification-unit-use-list*)
   (:export :verifier-output :verifier-output-comment
            :remove-decls))
 
@@ -59,6 +60,8 @@
           (cadr postcd))))))
 
 (defvar *external-functions* nil)
+(defvar *verification-unit-name* nil)
+(defvar *verification-unit-use-list* nil)
 
 (defun rewrite-uses-packages (use-list)
   "Rewrites the USE packages from use-list so that they are now
@@ -90,6 +93,8 @@
                 (:use ,@real-uses)
                 (:documentation ,documentation))
               (in-package ,pkg)
+              (setf *verification-unit-name* ,pkg)
+              (setf *verification-unit-use-list* ',uses)
               (defvar ,assume-verified-var)
               (defvar ,verify-only-var)
               (cl:mapcar (cl:lambda (f) (cl:push f ,assume-verified-var)) ,assume-verified)
