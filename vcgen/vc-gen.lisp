@@ -25,6 +25,7 @@
   (:use :cl :ir.utils :ir.vc.core.impl :ir.vc.assemble :ir.vc.formatter :ir.vc.user)
   (:import-from :ir.vc.core :assertion :precd :postcd :default :*external-functions* :true :false)
   (:import-from :ir.vc.core #:-> :*goal-set-hook*)
+  (:import-from :ir.vc.core #:*verification-unit-name* #:*verification-unit-use-list*)
   (:export :generate-theory :test-clir)
   (:export :easy-test :easy-protogoals :easy-goals))
 (in-package :ir.vc)
@@ -62,9 +63,12 @@
       (delete-file (probe-file prover-file)))
 
     (with-open-file (stream prover-file :direction :output)
-      (format stream "theory UntitledTheory ~% use import int.Int~%
-use import int.Fact~% use import array.Array~% use import
-array.IntArraySorted~% use import array.ArrayPermut~%~{~A~^~%~} ~%~%end~%"
+      (format stream "~@<~2Itheory ~A ~:@_~
+~{use import ~A ~^~:@_~}~:@_~:@_~
+~{~2I~A~^~@_~}~
+~@_end~@_~:>"
+              *verification-unit-name*
+              (mapcar #'ir.vc.theories:find-import-in-lemma-db *verification-unit-use-list*)
               goals))))
 
 (defun test-clir (clir-file f)

@@ -1,3 +1,8 @@
+(defpackage :ir.vc.theories
+  (:use :cl)
+  (:export #:enable-default-lemma-db #:enable-lemma-db #:disable-lemma-db
+           #:find-import-in-lemma-db))
+
 (defpackage :ir.vc.reader
   (:use :cl)
   (:export :set-sharpsign-exclam-dispatch-character
