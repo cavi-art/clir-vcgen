@@ -20,8 +20,9 @@
 
 
 (defpackage :ir.vc.user
-  (:use :common-lisp :ir.utils)
-  (:export :load-eval-file :read-file))
+  (:use :common-lisp :ir.utils :ir.vc.formatter :ir.vc.backend)
+  (:export #:load-eval-file #:read-file #:generate-theory-file #:test-clir
+           #:easy-file #:easy-test #:easy-protogoals))
 
 (cl:in-package :ir.vc.user)
 
@@ -51,3 +52,57 @@ get read and `INTERN'-ed on their proper packages."
                                collect (progn (eval a) a)
                                else
                                collect a))))
+
+
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defparameter *clir-extension* ".clir"
+    "The extension for source clir files. easy- macros use this
+  extension to look for source files."))
+
+
+(defun generate-theory-file (clir-file closure)
+  (load-eval-file clir-file)
+  (let* ((prover-file (clir-pathspec-to-backend clir-file))
+         (existing-file (probe-file prover-file)))
+    (when existing-file
+      (delete-file existing-file))
+
+    (with-open-file (stream prover-file :direction :output)
+      (generate-theory (funcall closure) stream))))
+
+
+(defun test-clir (clir-file f)
+  (generate-theory-file clir-file f)
+  (launch-ide (clir-pathspec-to-backend clir-file)))
+
+(defmacro easy-file (basename &optional (extension *clir-extension*))
+  "Returns the path to a file in ../test/basename.clir"
+  (format nil "../test/~(~A~)~A" (symbol-name basename) extension))
+
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defun easy-funcall% (function package)
+    (if package
+        `(funcall (find-symbol ,(symbol-name function) (find-package ,package)))
+        (list function))))
+
+(defmacro easy-test (basename function &optional package only-theory)
+  "Tests a file. The \"basename\" must be the name of the file without
+  the ending .clir (or whatever `*clir-extension*' is set). See the
+  code of `easy-file' for more information. The \"function\" is the
+  name of the function to test. The package of that function can be
+  provided as a package designator in the third parameter. If the
+  fourth parameter is set, then the why file gets created but why3 is
+  not launched."
+  (let ((testing-function (if only-theory
+                              'generate-theory-file
+                              'test-clir)))
+    `(,testing-function (pathname (easy-file ,basename))
+                        (lambda () ,(easy-funcall% function package)))))
+
+
+(defmacro easy-protogoals (basename function &optional package)
+  "This is a debugging facility which does not produce automatically
+consumable output."
+  `(progn
+     (load-eval-file (pathname (easy-file ,basename)))
+     (clir-goals-to-string ,(easy-funcall% function package))))
