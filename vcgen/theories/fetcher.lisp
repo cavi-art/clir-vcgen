@@ -21,8 +21,10 @@
 (in-package :ir.vc.theories)
 
 (defparameter *default-theory-databases* (list (string 'defaultdb)))
-(defvar *theory-databases* (make-hash-table))
+(defvar *theory-databases* (make-hash-table :test #'equal))
 (defvar *enabled-theory-databases* *default-theory-databases*)
+
+(defvar *theories-directory* (directory-namestring *load-pathname*))
 
 
 (defun toalist% (plist)
@@ -35,14 +37,20 @@
   (declare (ignore description compatibility modules))
   (let ((gname (gensym "NAME")))
     `(let ((,gname (string ',name)))
-         (setf (gethash ,gname *theory-databases*)
-               ',(toalist% (cdr args))))))
+       (setf (gethash ,gname *theory-databases*)
+             ',(list*
+                (cons :directory (directory-namestring *load-pathname*))
+                (toalist% (cdr args)))))))
 
 (defun enable-theory-db (db-name)
   (pushnew (string db-name) *enabled-theory-databases*))
 
 (defun disable-theory-db (db-name)
   (delete (string db-name) *enabled-theory-databases*))
+
+(defun get-theory-directory (theory-name)
+  (cdr (assoc :directory
+              (gethash (string theory-name) *theory-databases*))))
 
 (defun find-import-in-theory-db (pkg)
   (cdr
@@ -59,4 +67,3 @@
                                                       *theory-databases*)))))
                            *enabled-theory-databases*))))))
 
-(load #P"./theories/defaultdb/database.lisp")

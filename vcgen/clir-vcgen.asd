@@ -18,3 +18,4 @@
                  (:file "vc-gen" :depends-on ("core" "builtins" "formatter" "assemble" "../utils" "user" "theories/fetcher"))
                  ))
 
+               (:file "theories/loader" :depends-on ("theories/fetcher"))
