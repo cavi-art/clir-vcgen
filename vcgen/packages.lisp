@@ -1,7 +1,7 @@
 (defpackage :ir.vc.theories
   (:use :cl)
-  (:export #:enable-default-lemma-db #:enable-lemma-db #:disable-lemma-db
-           #:find-import-in-lemma-db))
+  (:export #:enable-default-theory-db #:enable-theory-db #:disable-theory-db
+           #:find-import-in-theory-db))
 
 (defpackage :ir.vc.reader
   (:use :cl)

@@ -68,7 +68,9 @@
 ~{~2I~A~^~@_~}~
 ~@_end~@_~:>"
               *verification-unit-name*
-              (mapcar #'ir.vc.theories:find-import-in-lemma-db *verification-unit-use-list*)
+              (remove-if-not
+               #'identity
+               (mapcar #'ir.vc.theories:find-import-in-theory-db *verification-unit-use-list*))
               goals))))
 
 (defun test-clir (clir-file f)

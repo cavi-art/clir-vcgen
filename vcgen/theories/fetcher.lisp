@@ -20,9 +20,9 @@
 
 (in-package :ir.vc.theories)
 
-(defparameter *default-lemma-db* 'lemmadb)
-(defvar *lemma-databases* (make-hash-table))
-(defvar *enabled-lemma-databases* (list (string *default-lemma-db*)))
+(defparameter *default-theory-databases* (list (string 'defaultdb)))
+(defvar *theory-databases* (make-hash-table))
+(defvar *enabled-theory-databases* *default-theory-databases*)
 
 
 (defun toalist% (plist)
@@ -31,36 +31,32 @@
       (cons (cons a b)
             (toalist% rest)))))
 
-(defmacro define-lemma-db (&whole args &key name description compatibility modules &allow-other-keys)
+(defmacro define-theory-db (&whole args &key name description compatibility modules &allow-other-keys)
   (declare (ignore description compatibility modules))
   (let ((gname (gensym "NAME")))
     `(let ((,gname (string ',name)))
-         (setf (gethash ,gname *lemma-databases*)
+         (setf (gethash ,gname *theory-databases*)
                ',(toalist% (cdr args))))))
 
-(defun enable-lemma-db (db-name)
-  (pushnew (string db-name) *enabled-lemma-databases*))
+(defun enable-theory-db (db-name)
+  (pushnew (string db-name) *enabled-theory-databases*))
 
-(defun disable-lemma-db (db-name)
-  (delete (string db-name) *enabled-lemma-databases*))
+(defun disable-theory-db (db-name)
+  (delete (string db-name) *enabled-theory-databases*))
 
-(defun enable-default-lemma-db ()
-  (enable-lemma-db (string *default-lemma-db*)))
-
-(defun find-import-in-lemma-db (pkg)
+(defun find-import-in-theory-db (pkg)
   (cdr
    (assoc :import
           (find-if (lambda (module)
                      (string= (string pkg) (string (cdr (assoc :name module)))))
                    (apply #'append
                           (mapcar
-                           (lambda (lemma-name)
+                           (lambda (theory-name)
                              (mapcar #'toalist%
                                      (cdr
                                       (assoc :modules
-                                             (gethash lemma-name
-                                                      *lemma-databases*)))))
-                           *enabled-lemma-databases*))))))
+                                             (gethash theory-name
+                                                      *theory-databases*)))))
+                           *enabled-theory-databases*))))))
 
-(load #P"./theories/lemmadb/database.lisp")
-(enable-default-lemma-db)
+(load #P"./theories/defaultdb/database.lisp")

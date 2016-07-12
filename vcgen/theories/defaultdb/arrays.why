@@ -1,9 +1,13 @@
+theory ArrayImports
+  use export array.Array
+  use export array.ArrayPermut
+  use export array.ArrayEq
+  use export array.IntArraySorted
+end
+
 theory ArrayLemmas
   use import int.Int
-  use import array.Array
-  use import array.ArrayPermut
-  use import array.IntArraySorted
-  use import array.ArrayEq
+  use import ArrayImports
 
 
   lemma empty_range_is_sorted: forall a: array int, l u: int.
