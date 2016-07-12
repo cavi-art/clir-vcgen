@@ -28,6 +28,7 @@
   for later use in a proof assistant.")
   (:use :cl :ir.utils :ir.vc.formulae)
   (:import-from :ir.vc.core :assertion :precd :postcd :default :*external-functions* :true :false)
+  (:import-from :ir.vc.core #:*verification-unit-name* #:*verification-unit-use-list*)
   (:export :verifier-output :verifier-output-comment
            :remove-decls))
 
@@ -59,17 +60,25 @@
           (cadr postcd))))))
 
 (defvar *external-functions* nil)
+(defvar *verification-unit-name* nil)
+(defvar *verification-unit-use-list* nil)
 
 (defun rewrite-uses-packages (use-list)
-  "Rewrites the USE packages from use-list so that they are now
-  dependant on VC/RT sub-packages. We also substitute the toplevel :IR
-  package for :IR.VC.CORE and :IR.VC.BUILTINS."
+  "Rewrites the USE packages from use-list.
+
+  Substitutes the toplevel :IR package for :IR.VC.CORE
+  and :IR.VC.BUILTINS. For other packages, removes those which cannot
+  be found in the lisp image (as they may indicate other flags which
+  are not necessarily lisp packages)."
   (flet ((rewrite-use-package (pkg)
            (if (equal (string-downcase (symbol-name pkg))
                       "ir")
                '(:ir.vc.core :ir.vc.builtins)
-               (list (make-symbol (format nil "~A.VC" pkg))))))
-    (apply #'append (mapcar #'rewrite-use-package use-list))))
+               (list pkg))))
+    (remove-if-not #'find-package
+                   (apply #'append
+                          (mapcar #'rewrite-use-package
+                                  use-list)))))
 
 ;;;; Grammar follows 
 (defmacro ir.vc.core:verification-unit (package-id &key sources uses documentation verify-only assume-verified)
@@ -90,6 +99,8 @@
                 (:use ,@real-uses)
                 (:documentation ,documentation))
               (in-package ,pkg)
+              (setf *verification-unit-name* ,pkg)
+              (setf *verification-unit-use-list* ',uses)
               (defvar ,assume-verified-var)
               (defvar ,verify-only-var)
               (cl:mapcar (cl:lambda (f) (cl:push f ,assume-verified-var)) ,assume-verified)

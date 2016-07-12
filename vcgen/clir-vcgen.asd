@@ -14,6 +14,7 @@
                  (:file "assemble" :depends-on ("core"))
                  (:file "formatter" :depends-on ("core"))
                  (:file "user" :depends-on ("core"))
-                 (:file "vc-gen" :depends-on ("core" "builtins" "formatter" "assemble" "../utils" "user"))
+                 (:file "theories/fetcher")
+                 (:file "vc-gen" :depends-on ("core" "builtins" "formatter" "assemble" "../utils" "user" "theories/fetcher"))
                  ))
 

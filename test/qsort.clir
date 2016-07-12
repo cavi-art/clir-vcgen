@@ -1,7 +1,7 @@
 (verification-unit "QSORT"
 		   :sources (((:lang :clir)
 			      (:module :self)))
-		   :uses (:ir)
+		   :uses (:ir :ir.int :ir.array :lemmas.arrays)
 		   :documentation "This is the quicksort function on the CLIR.")
 
 (define arrCopy

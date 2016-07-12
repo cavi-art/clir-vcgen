@@ -1,0 +1,129 @@
+(verification-unit "ArrayLemmas"
+		   :sources (((:lang :clir)
+			      (:module :self)))
+		   :uses (:ir :clir.int :clir.array))
+		   :documentation "These are backend-agnostic array lemmas written in CLIR.")
+
+(lemma empty_range_is_sorted
+       (forall ((a (array int)) (l int) (u int))
+               (-> (@ = u (@ length a))
+                   (@ >= l u)
+                   (@ sorted_sub a l u))))
+
+(lemma permut_sub_commmutative
+       (forall ((a1 (array int))
+                (a2 (array int))
+                (l int)
+                (u int))
+               (-> (@ <= 0 l)
+                   (@ < l u)
+                   (@ <= u (@ length a1))
+                   (@ <= (@ length a1) (@ length a2))
+                   (@ permut_sub a1 a2 l u)
+                   (@ permut_sub a2 a1 l u))))
+
+(lemma array_eq_is_permut_sub
+       (forall ((a1 (array int))
+                (a2 (array int))
+                (l int)
+                (u int))
+               (-> (@ <= 0 l)
+                   (@ < l u)
+                   (@ <= u (@ length a1))
+                   (@ = (@ length a1) (@ length a2))
+                   (@ array_eq a1 a2)
+                   (@ permut_sub a1 a2 l u))))
+
+;; Makes it a lot easier for CVC4 to solve partition; Alt_Ergo can do without it
+(lemma exchange_commutative
+       (forall ((a1 (array int))
+                (a2 (array int))
+                (i int)
+                (j int))
+               (<-> (@ exchange a1 a2 i j)
+                    (@ exchange a2 a1 i j)
+                    (@ exchange a2 a1 j i)
+                    (@ exchange a1 a2 j i))))
+
+(lemma exchange_is_permut
+       (forall ((a1 (array int))
+                (a2 (array int))
+                (i int)
+                (j int))
+               (-> (@ <= 0 i j)
+                   (@ < j (@ length a1))
+                   (@ = (@ length a1) (@ length a2))
+                   (@ exchange a1 a2 i j)
+                   (@ permut_sub a1 a2 i (@ + j 1)))))
+
+(lemma permut_trans
+       (forall ((a1 (array int))
+                (a2 (array int))
+                (a3 (array int))
+                (i int)
+                (j int))
+               (-> (@ <= 0 i j)
+                   (@ < j (@ length a1))
+                   (@ = (@ length a1) (@ length a2) (@ length a3))
+                   (@ permut_sub a1 a2 i (@ + j 1))
+                   (@ permut_sub a2 a3 i (@ + j 1))
+                   (@ permut_sub a1 a3 i (@ + j 1)))))
+
+(lemma permut_trans_weakening
+       (forall ((a1 (array int))
+                (a2 (array int))
+                (a3 (array int))
+                (l1 int)
+                (l2 int)
+                (u1 int)
+                (u2 int))
+               (-> (@ <= 0 l1 l2)
+                   (@ < l2 u2)
+                   (@ <= u2 u1)
+                   (@ < u1 (@ length a1))
+                   (@ permut_sub a1 a2 l2 u2)
+                   (@ permut_sub a2 a3 l2 u2)
+                   (@ permut_sub a1 a3 l1 u1))))
+
+(lemma sorted_meaning
+       (forall ((a (array int))
+                (i int)
+                (j int)
+                (k int))
+               (-> (@ <= i k)
+                   (@ < k j)
+                   (@ sorted_sub a i (@ + j 1))
+                   (@ <= (@ get a i)
+                         (@ get a k)
+                         (@ get a j)))))
+
+(lemma is_sorted
+       (forall ((a (array int))
+                (i int)
+                (j int)
+                (k int)
+                (l int)
+                (p int))
+               (-> (@ <= i k p)
+                   (@ < p l)
+                   (@ <= l j)
+                   (@ sorted_sub a i (@ + j 1))
+                   (@ <= (@ get a k)
+                         (@ get a p)
+                         (@ get a l)))))
+
+(lemma permut_null_interval
+       (forall ((a (array int))
+                (l int)
+                (u int))
+               (-> (@ <= 0 l (@ length a))
+                   (and (@ <= 0 u)
+                        (@ < u (@ length a)))
+                   (@ permut_sub a a u l))))
+
+
+
+;; Local Variables:
+;; mode: common-lisp
+;; coding: utf-8
+;; End:
