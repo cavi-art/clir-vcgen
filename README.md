@@ -5,6 +5,24 @@ CLIR-VCGEN is a Verification Condition Generator for verification
 purposes on CLIR files.
 
 
+Description
+===========
+
+This VCGEN is a lisp verification condition generator for languages.
+It is tailored for CAVI-ART's CLIR, because of its Symbolic Expression
+syntax, which gets compiled to executable expressions.
+
+We have a backend system for supporting several backends, both
+interactively and non-interactively. Currently, we only support Why3
+as an interactive backend. In the future, a better API will export the
+underlying backend's options for improving the proofs.
+
+We also have a theory database, so that different theories can be used
+in different CLIR files which may come from different origins, and,
+for example, need reasoning about numbers taking machine arithmetic
+into account or not.
+
+
 Usage
 =====
 
