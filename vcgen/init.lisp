@@ -34,6 +34,7 @@
 (qlot:install 'clir-vcgen)
 (qlot:quickload 'clir-vcgen)
 
-
-
+(defun test ()
+  (load "vcgen-test.asd")
+  (asdf:test-system 'vcgen-test))
 
