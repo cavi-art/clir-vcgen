@@ -63,6 +63,8 @@
     (setf *vc-backend* backend)))
 
 (defun clir-pathspec-to-backend (path &optional (backend *vc-backend*))
+  "Returns a backend-specific pathspec in the same directory as the
+given PATH, which should be a CLIR file."
   (let ((prover-extension (backend-file-extension (find-backend backend))))
     (let* ((name (pathname-name path))
            (dir (pathname-directory path))
@@ -75,15 +77,21 @@
        (make-pathname :name prover-file-name :type :unspecific)))))
 
 (defun generate-theory (goal-set stream &optional (backend *vc-backend*))
+  "Generates a whole theory for discharging from the goal-set and
+outputs it to stream."
   (funcall (backend-theory-generator (find-backend backend))
            goal-set
            stream))
 
 (defun launch-ide (prover-file &optional (backend *vc-backend*))
+  "Launches the backend's IDE for editing the proof points (if the
+backend has such an IDE)."
   (funcall (backend-launch-ide (find-backend backend))
            prover-file))
 
 (defun launch-noninteractive (prover-file &optional (backend *vc-backend*))
+  "Launches the backend's automated solver, and tries to discharge the
+backend-specific prover-file."
   (funcall (backend-launch-noninteractive (find-backend backend))
            prover-file))
 
