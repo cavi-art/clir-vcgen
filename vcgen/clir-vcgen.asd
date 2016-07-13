@@ -22,7 +22,7 @@
                                                    "core"
                                                    "formatter"
                                                    "theories/fetcher"))
-               (:file "user" :depends-on ("core"
+               (:file "facade" :depends-on ("core"
                                           "../utils"
                                           "formatter"
                                           "backends"))
@@ -31,6 +31,6 @@
                                             "formatter"
                                             "assemble"
                                             "../utils"
-                                            "user"
+                                            "facade"
                                             "theories/fetcher"))
                ))

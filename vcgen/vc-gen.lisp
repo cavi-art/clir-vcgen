@@ -22,7 +22,7 @@
 (in-package :cl-user)
 (declaim (optimize debug))
 (defpackage :ir.vc-user
-  (:use :cl :ir.vc.user))
+  (:use :cl :ir.vc))
 (in-package :ir.vc-user)
 
 

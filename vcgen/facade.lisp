@@ -19,12 +19,13 @@
 ;;; along with CAVIART-VCGEN.  If not, see <http://www.gnu.org/licenses/>.
 
 
-(defpackage :ir.vc.user
+(defpackage :ir.vc.facade
   (:use :common-lisp :ir.utils :ir.vc.formatter :ir.vc.backend)
+  (:nicknames :ir.vc)
   (:export #:load-eval-file #:read-file #:generate-theory-file #:test-clir
            #:easy-file #:easy-test #:easy-protogoals))
 
-(cl:in-package :ir.vc.user)
+(cl:in-package :ir.vc.facade)
 
 (defun load-eval-file (pathname)
   "Reads, loads and evals a CLIR file in the VCGEN semantics."

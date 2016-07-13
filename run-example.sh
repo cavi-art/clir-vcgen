@@ -19,7 +19,7 @@ exec ros -Q -- $0 "$@"
   (load #P"init.lisp"))
 
 (defpackage :ros.script.ir.vc.run-example
-  (:use :cl :ir.vc.user))
+  (:use :cl :ir.vc))
 (in-package :ros.script.ir.vc.run-example)
 
 (defun main (&rest argv)
