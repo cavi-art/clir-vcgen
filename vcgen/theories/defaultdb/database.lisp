@@ -8,15 +8,12 @@
                    :import "numbers.IntegerImports"
                    :description "Integer theory for the prover")
             (:name ir.array
-                   :files ("arrays.why")
+                   :files ("arrays.mlw")
                    :import "arrays.ArrayImports"
                    :description "Array theory for the prover")
             (:name lemmas.arrays ;; This is the VU-name on :uses
-             :files ("arrays.why")
+             :files ("arrays.mlw")
              :import "arrays.ArrayLemmas"
              :description "Several additional lemmas on Arrays")))
 
 
-;; Local Variables:
-;; slime-buffer-package: ir\.vc\.theories
-;; End:

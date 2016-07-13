@@ -1,11 +1,11 @@
-theory ArrayImports
+module ArrayImports
   use export array.Array
   use export array.ArrayPermut
   use export array.ArrayEq
   use export array.IntArraySorted
 end
 
-theory ArrayLemmas
+module ArrayLemmas
   use import int.Int
   use import ArrayImports
 
