@@ -190,7 +190,8 @@ defun-ish body and the resulting body as values."
   be known as variables and the postcondition will be well formed."
   (if typed-variable-list
       (labels ((symbol-macroletize (typed-var)
-                 (destructuring-bind (var-name var-type) typed-var
+                 (destructuring-bind (var-name var-type . rest) typed-var
+                   (declare (ignore rest))
                    `(,var-name (terminal-expression (,var-name) :type ,var-type)))))
         `(with-premise ((list 'forall ',typed-variable-list))
            (symbol-macrolet ,(mapcar #'symbol-macroletize typed-variable-list)

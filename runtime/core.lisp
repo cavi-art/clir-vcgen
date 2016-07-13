@@ -199,10 +199,10 @@ functions."
      ,(from-clir (car body))))
 
 (defun drop-types (typed-var-list)
-  (mapcar #'car typed-var-list))
+  (mapcar #'first typed-var-list))
 
 (defun get-types (typed-var-list)
-  (mapcar #'cadr typed-var-list))
+  (mapcar #'second typed-var-list))
 
 (defmacro ir.rt.core:let (typed-var-list val &body body)
   "Lexically binds a var, syntax is: (let var val body-form). It can
