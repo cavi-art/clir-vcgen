@@ -30,12 +30,6 @@
 (defvar *vc-backends* (make-hash-table :test #'equal))
 (defvar *vc-backend* 'why3)
 
-(defun toalist% (plist)
-  (when plist
-    (destructuring-bind (a b . rest) plist
-      (cons (cons a b)
-            (toalist% rest)))))
-
 (defstruct backend
   "A backend for representing CLIR proof obligations in order to prove them."
   (name nil :type (or string symbol))

@@ -27,20 +27,14 @@
 (defvar *theories-directory* (directory-namestring *load-pathname*))
 
 
-(defun toalist% (plist)
-  (when plist
-    (destructuring-bind (a b . rest) plist
-      (cons (cons a b)
-            (toalist% rest)))))
-
 (defmacro define-theory-db (&whole args &key name description compatibility modules &allow-other-keys)
   (declare (ignore description compatibility modules))
   (let ((gname (gensym "NAME")))
     `(let ((,gname (string ',name)))
        (setf (gethash ,gname *theory-databases*)
              ',(list*
-                (cons :directory (truename (directory-namestring *load-pathname*)))
-                (toalist% (cdr args)))))))
+                :directory (truename (directory-namestring *load-pathname*))
+                (cdr args))))))
 
 (defun enable-theory-db (db-name)
   (pushnew (string db-name) *enabled-theory-databases*))
@@ -49,21 +43,22 @@
   (delete (string db-name) *enabled-theory-databases*))
 
 (defun get-theory-directory (theory-name)
-  (cdr (assoc :directory
-              (gethash (string theory-name) *theory-databases*))))
+  (getf (gethash (string theory-name) *theory-databases*)
+        :directory))
 
 (defun find-import-in-theory-db (pkg)
-  (cdr
-   (assoc :import
-          (find-if (lambda (module)
-                     (string= (string pkg) (string (cdr (assoc :name module)))))
-                   (apply #'append
-                          (mapcar
-                           (lambda (theory-name)
-                             (mapcar #'toalist%
-                                     (cdr
-                                      (assoc :modules
-                                             (gethash theory-name
-                                                      *theory-databases*)))))
-                           *enabled-theory-databases*))))))
+  (getf (find-if (lambda (module)
+                   (string= (string (getf module :name))
+                            (string pkg)))
+                 (apply #'append
+                        (mapcar (lambda (theory)
+                                  (getf theory :modules))
+                                (enabled-theories))))
+        :import))
 
+(defun enabled-theories ()
+  (mapcar
+   (lambda (theory-name)
+     (gethash theory-name
+              *theory-databases*))
+   *enabled-theory-databases*))
