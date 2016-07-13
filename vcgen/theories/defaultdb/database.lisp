@@ -11,6 +11,10 @@
                    :files ("arrays.mlw")
                    :import "arrays.ArrayImports"
                    :description "Array theory for the prover")
+            (:name ir.array.immutable
+                   :files ("arrays.mlw")
+                   :import "arrays.ImmutabilityHelpers"
+                   :description "Array immutability aids for writing immutable arrays the CLIR")
             (:name lemmas.arrays ;; This is the VU-name on :uses
              :files ("arrays.mlw")
              :import "arrays.ArrayLemmas"

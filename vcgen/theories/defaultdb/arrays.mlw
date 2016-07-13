@@ -63,6 +63,33 @@ module ArrayLemmas
 
 end
 
+module ImmutabilityHelpers
+  use import int.Int
+  use import ArrayImports
+
+  let arrCopy(v:array int):(array int)
+      =
+        ensures { length v = length result /\ forall i. 0<=i<length v -> result[i] = v[i] }
+        ensures { array_eq result v }
+        let v1 = make (length v) 1 in
+        begin
+                for i=0 to (length v)-1 do
+                    invariant {forall j. 0<=j<i -> v1[j] = v[j]}
+                    v1[i] <- v[i]
+                done;
+                v1
+        end
+
+  let swap (v:array int) (i:int) (j:int) : (array int)
+    requires { 0 <= i < length v /\ 0 <= j < length v }
+    ensures { exchange result v i j }
+    = let v1 = arrCopy v in
+      v1[i] <- v[j];
+      v1[j] <- v[i];
+      v1
+
+end
+
 
 (* Local Variables: *)
 (* indent-tabs-mode: nil *)
