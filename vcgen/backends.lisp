@@ -68,7 +68,7 @@ given PATH, which should be a CLIR file."
   (let ((prover-extension (backend-file-extension (find-backend backend))))
     (let* ((name (pathname-name path))
            (dir (pathname-directory path))
-           (basename (subseq name 0 (find #\. name :from-end t)))
+           (basename (subseq name 0 (position #\. name :from-end t)))
            (prover-file-name (concatenate 'string
                                           basename
                                           prover-extension)))
