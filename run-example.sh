@@ -1,43 +1,28 @@
 #!/bin/bash
+#|-*- mode:lisp -*-|#
+#| Launches a test run of verifying quicksort
 
-which () {
-    /usr/bin/which "$@"
-}
+if ! /usr/bin/which ros >/dev/null 2>&1; then
+    echo "Could not find roswell installed in your PATH."
+    echo "Roswell (ros) is REQUIRED to use this project."
+    echo
+    echo "You can find more information on how to install it at:"
+    echo
+    echo "https://github.com/roswell/roswell/wiki/1.-Installation"
+    exit 1
+fi
 
-run-lisp-example () {
-    if which sbcl >/dev/null 2>&1; then
-	run-with-sbcl
-	# LISP=sbcl run-with-generic-lisp
-    elif which clisp >/dev/null 2>&1; then
-	LISP=clisp run-with-generic-lisp
-    elif which lisp >/dev/null 2>&1; then
-	LISP=lisp run-with-generic-lisp
-    else
-	echo <<EOF
-Could not find a lisp interpreter. Make sure you have it in your PATH
-that it is called either lisp or sbcl (or send a patch).
-EOF
-	
-	exit 1
-    fi
-}
+exec ros -Q -- $0 "$@"
+|#
+(progn ;;init forms
+  (setf *default-pathname-defaults* (merge-pathnames #P"vcgen/"))
+  (load #P"init.lisp"))
 
-run-with-sbcl () {
-    sbcl --load ./runtime/init.lisp \
-	 --non-interactive \
-	 --eval '(ir.rt.core.impl::execute-clir-file "test/inssort.clir")' \
-	 --eval '(print (|inssort|::create-list-and-heap))' \
-	 2>/dev/null
-}
+(defpackage :ros.script.ir.vc.run-example
+  (:use :cl :ir.vc.user))
+(in-package :ros.script.ir.vc.run-example)
 
-run-with-generic-lisp () {
-    $LISP <<EOF
-(load "./runtime/init.lisp")
-(ir.rt.core.impl::execute-clir-file "test/inssort.clir")
-(|inssort|::create-list-and-heap)
-EOF
-}
-
-
-run-lisp-example
-
+(defun main (&rest argv)
+  (declare (ignorable argv))
+  (easy-test qsort quicksort 'qsort))
+;;; vim: set ft=lisp lisp:
