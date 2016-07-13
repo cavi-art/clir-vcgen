@@ -39,7 +39,7 @@
     `(let ((,gname (string ',name)))
        (setf (gethash ,gname *theory-databases*)
              ',(list*
-                (cons :directory (directory-namestring *load-pathname*))
+                (cons :directory (truename (directory-namestring *load-pathname*)))
                 (toalist% (cdr args)))))))
 
 (defun enable-theory-db (db-name)

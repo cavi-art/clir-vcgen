@@ -77,10 +77,11 @@ get read and `INTERN'-ed on their proper packages."
 
 (defmacro easy-file (basename &optional (extension *clir-extension*))
   "Returns the path to a file in ../test/basename.clir"
-  (merge-pathnames
-   (make-pathname :directory (list :relative :up "test")
-                  :name (format nil "~(~A~)~A" (symbol-name basename) extension)
-                  :type :unspecific)))
+  (truename
+   (merge-pathnames
+    (make-pathname :directory (list :relative :up "test")
+                   :name (format nil "~(~A~)~A" (symbol-name basename) extension)
+                   :type :unspecific))))
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defun easy-funcall% (function package)
