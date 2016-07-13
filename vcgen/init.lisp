@@ -31,7 +31,7 @@
 
 (load "clir-vcgen.asd")
 (ql:quickload 'prove)
-;; (qlot:install 'clir-vcgen)
+(qlot:install 'clir-vcgen)
 (qlot:quickload 'clir-vcgen)
 
 
