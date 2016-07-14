@@ -21,6 +21,11 @@
 (declaim (optimize debug))
 (in-package :ir.vc.formulae)
 
+(defstruct goal
+  (premises nil :type list)
+  (name (string (gensym "unnamed_goal_")) :type string))
+
+
 (defclass premise ()
   ((formula :accessor premise-formula
             :initarg :formula

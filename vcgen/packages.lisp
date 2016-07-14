@@ -20,6 +20,8 @@
   (:export #:-> #:<-> #:and #:or #:forall #:exists)
   (:export #:assertion #:precd #:postcd #:true #:false)
 
+  (:export #:make-goal #:goal-name #:goal-premises)
+
   (:export #:make-premise #:premise-formula #:premise-name))
 
 
