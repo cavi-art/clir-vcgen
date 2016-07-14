@@ -51,8 +51,8 @@
 
     (format stream "~@<~2Itheory ~A ~:@_~
 ~{use import ~A ~^~:@_~}~:@_~:@_~
-~{~2I~A~^~@_~}~
-~@_end~@_~:>"
+~{~2I~A~:@_~}~
+~:@_end~:@_~:>"
             theory-name
             why3-imports
             goals)))
