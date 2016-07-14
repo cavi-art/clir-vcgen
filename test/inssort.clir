@@ -5,7 +5,7 @@
 ;;   (load "init.lisp"))
 ;; End of bogus instruction
 
-(verification-unit "inssort"
+(verification-unit inssort
 		   :sources (((:lang :erlang)
 			      (:module "/inssort.erl")))
 		   :uses (:ir)
