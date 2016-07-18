@@ -21,11 +21,6 @@
 (declaim (optimize debug))
 (in-package :ir.vc.formulae)
 
-(defstruct goal
-  (premises nil :type list)
-  (name (string (gensym "unnamed_goal_")) :type string))
-
-
 (defclass premise ()
   ((formula :accessor premise-formula
             :initarg :formula
@@ -39,6 +34,11 @@
    (metadata :accessor premise-meta
              :initarg :meta
              :initform nil)))
+
+(defstruct goal
+  name
+  proof-obligations)
+
 
 (defmethod print-object ((premise premise) stream)
   (with-accessors ((formula premise-formula)
@@ -81,6 +81,10 @@
     (t nil)))
 (deftype premise-list () '(and list (satisfies premise-list-p%)))
 
+(defun make-metapremise (&key premises meta)
+  (make-instance 'metapremise
+                 :premises premises
+                 :meta meta))
 
 (defun make-premise (&rest kwargs)
   (apply #'make-instance 'premise kwargs))

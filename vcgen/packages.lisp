@@ -20,7 +20,7 @@
   (:export #:-> #:<-> #:and #:or #:forall #:exists)
   (:export #:assertion #:precd #:postcd #:true #:false)
 
-  (:export #:make-goal #:goal-name #:goal-premises)
+  (:export #:make-goal #:goal-proof-obligations #:goal-name)
 
   (:export #:make-premise #:premise-formula #:premise-name))
 
@@ -108,4 +108,4 @@
   (:use :cl :ir.utils :ir.vc.formulae)
   (:import-from :ir.vc.core :assertion :precd :postcd :default :*external-functions* :true :false)
   (:import-from :ir.vc.core #:->)
-  (:export :clir-formula-to-string :clir-premises-to-string :clir-goals-to-string))
+  (:export :clir-formula-to-string :clir-premises-to-string :clir-goals-to-string :clir-goal-to-string))

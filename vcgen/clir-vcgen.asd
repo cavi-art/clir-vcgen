@@ -23,9 +23,10 @@
                                                    "formatter"
                                                    "theories/fetcher"))
                (:file "facade" :depends-on ("core"
-                                          "../utils"
-                                          "formatter"
-                                          "backends"))
+                                            "../utils"
+                                            "formulae"
+                                            "formatter"
+                                            "backends"))
                (:file "vc-gen" :depends-on ("core"
                                             "builtins"
                                             "formatter"

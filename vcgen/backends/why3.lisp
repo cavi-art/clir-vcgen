@@ -20,10 +20,10 @@
 
 (in-package :cl-user)
 (defpackage :ir.vc.backend.why3
-  (:use :cl :ir.utils :ir.vc.backend :ir.vc.theories)
+  (:use :cl :ir.utils :ir.vc.formulae :ir.vc.backend :ir.vc.theories)
   (:import-from :ir.vc.theories #:find-import-in-theory-db)
   (:import-from :ir.vc.assemble #:protogoals-to-goals)
-  (:import-from :ir.vc.formatter #:clir-goals-to-string)
+  (:import-from :ir.vc.formatter #:clir-goal-to-string)
   (:import-from :ir.vc.core #:*verification-unit-name* #:*verification-unit-use-list*))
 (in-package :ir.vc.backend.why3)
 
@@ -41,7 +41,8 @@
 
 
 (defun why3-generate-theory (goal-set stream)
-  (let ((goals (clir-goals-to-string (protogoals-to-goals goal-set)))
+  (let ((goal (clir-goal-to-string (mapcar #'protogoals-to-goals (goal-proof-obligations goal-set))
+                                     (goal-name goal-set)))
         (theory-name *verification-unit-name*)
         (why3-imports (remove-if-not
                        #'identity
@@ -55,7 +56,7 @@
 ~:@_end~:@_~:>"
             theory-name
             why3-imports
-            goals)))
+            (list goal))))
 
 
 (defun why3-launch-ide (prover-file)
