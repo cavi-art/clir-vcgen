@@ -39,6 +39,11 @@
   name
   proof-obligations)
 
+(defmethod premise-formula ((premise premise))
+  (with-slots ((formula formula) (name name)) premise
+    (if name
+        (list :name name formula)
+        formula)))
 
 (defmethod print-object ((premise premise) stream)
   (with-accessors ((formula premise-formula)
