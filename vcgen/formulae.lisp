@@ -35,6 +35,16 @@
              :initarg :meta
              :initform nil)))
 
+(defstruct goal
+  name
+  proof-obligations)
+
+(defmethod premise-formula ((premise premise))
+  (with-slots ((formula formula) (name name)) premise
+    (if name
+        (list :name name formula)
+        formula)))
+
 (defmethod print-object ((premise premise) stream)
   (with-accessors ((formula premise-formula)
                    (comment premise-comment)
@@ -76,6 +86,10 @@
     (t nil)))
 (deftype premise-list () '(and list (satisfies premise-list-p%)))
 
+(defun make-metapremise (&key premises meta)
+  (make-instance 'metapremise
+                 :premises premises
+                 :meta meta))
 
 (defun make-premise (&rest kwargs)
   (apply #'make-instance 'premise kwargs))

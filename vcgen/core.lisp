@@ -272,7 +272,9 @@ defun-ish body and the resulting body as values."
 (defmacro with-goal-set (&body body)
   `(let ((*goal-set* nil))
      ,@body
-     (funcall (or ir.vc.core:*goal-set-hook* ,ir.vc.core:*default-goal-set-hook*) (reverse *goal-set*))))
+     (funcall (or ir.vc.core:*goal-set-hook* ,ir.vc.core:*default-goal-set-hook*)
+              (make-goal :name *current-function*
+                         :proof-obligations (reverse *goal-set*)))))
 
 (defun @-p (form)
   "Returns whether the form is a funcall."
@@ -306,15 +308,20 @@ defun-ish body and the resulting body as values."
   define."
   (declare (ignorable result-arg full-body))
   (let ((body (remove-decls (function-body (cdr definition)))))
-    `(defun ,function-name ()
-       (with-goal-set
-           (with-empty-premise-list
+    `(progn
+       ;; We "permanently" set the dynamic binding here, so that later
+       ;; define'd functions can also use this function's pre/post
+       ;; condition definition.
+       (setf *function-list* (cons ',(cdr definition) *function-list*))
+
+       (defun ,function-name ()
+         (with-current-function ',function-name
+           (with-goal-set
+             (with-empty-premise-list
                (with-variables ,typed-lambda-list
-                 (with-function-definition ',(cdr definition)
-                   (with-current-function ',function-name
-                     (with-premise ((@precd ',function-name ',(drop-types typed-lambda-list))
-                                    :name ,(symbol-name function-name))
-                       ,@ (mapcar #'maybe-macroexpand body))))))))))
+                 (with-premise ((@precd ',function-name ',(drop-types typed-lambda-list))
+                                :name ,(symbol-name function-name))
+                   ,@ (mapcar #'maybe-macroexpand body))))))))))
 
 (defmacro ir.vc.core:letfun (definitions
                              &body full-body)
@@ -438,7 +445,12 @@ defun-ish body and the resulting body as values."
 
 (defun output-goal (target &key name)
   (when (not (eq target 'true))
-    (push (reverse (cons (make-premise :name name :formula target) *premise-list*)) *goal-set*)))
+    (push
+     (reverse (cons
+               (make-premise :name (format nil "~A ~A" *current-function* name)
+                             :formula target)
+               *premise-list*))
+     *goal-set*)))
 
 
 

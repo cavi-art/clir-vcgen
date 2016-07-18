@@ -64,6 +64,7 @@
               (-> (format nil "~{(~A)~^ -> ~}" (mapcar #'clir-formula-to-string (rest formula))))
               (and (format nil "(~{~A~^ /\\ ~})" (mapcar #'clir-formula-to-string (rest formula))))
               (or (format nil "~{~A~^ \\/ ~}" (mapcar #'clir-formula-to-string (rest formula))))
+              (:name (format nil "(~10< \"~A\" ~> ~A)" (second formula) (clir-formula-to-string (third formula))))
               (:postcd_placeholder (format nil "true (* POSTCD OF ~A([~A]) *)" (second formula) (rest formula)))
               (:precd_placeholder (format nil "true (* PRECD OF ~A([~A]) *)" (second formula) (rest (rest formula))))
               (ir.vc.core:@ (apply-predicate (rest formula)))
@@ -73,10 +74,12 @@
 (defun clir-premises-to-string (premises)
   (flet ((not-quantifier (premise)
            (or (not (consp premise))
-               (not (member (car premise) (list 'forall 'exists))))))
+               (and
+                (and (eq (first premise) :name)
+                     (not (member (second premise) (list 'forall 'exists))))
+                (not (member (first premise) (list 'forall 'exists)))))))
     (when premises
-      (concatenate 'string (format nil "~10< \"~A\" ~>~(~A~)~@[~&~I -> ~]"
-                                   (premise-name (first premises))
+      (concatenate 'string (format nil "~(~A~)~@[~&~I -> ~]"
                                    (clir-formula-to-string (premise-formula (first premises)))
                                    (and (not-quantifier (premise-formula (first premises)))
                                         (rest premises)))
@@ -87,11 +90,17 @@
   (declare (ignore premise-list))
   "name_not_implemented")
 
-(defun clir-goals-to-string (goals)
+(defun clir-goals-to-string (goals &optional function-name)
   (let ((goal-count 0))
     (mapcar (lambda (premises)
               (format nil "goal ~A_~A: ~A~%"
-                      (get-premise-name premises)
+                      (or function-name
+                          (get-premise-name premises))
                       (incf goal-count)
                       (clir-premises-to-string premises)))
             goals)))
+
+(defun clir-goal-to-string (goals function-name)
+   (format nil "goal ~A: ~{(**)(~A)(**) ~^ /\\ ~}~%"
+           function-name
+           (mapcar #'clir-premises-to-string goals)))
