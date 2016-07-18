@@ -75,13 +75,13 @@
                          (@ permut_sub vres v i (@ + j (the int 1)))
                          (forall ((k int))
                                  (-> (@ <= i k pos_piv)
-                                     (@ <= (@ get v2 k)
-                                           (@ get v2 pos_piv))))
+                                     (@ <= (@ get vres k)
+                                           (@ get vres pos_piv))))
                          (forall ((r int))
                                  (-> (and (@ < pos_piv r)
                                           (@ <= r j))
-                                     (@ > (@ get v2 r)
-                                          (@ get v2 pos_piv))))))))
+                                     (@ > (@ get vres r)
+                                          (@ get vres pos_piv))))))))
 
   (let ((piv int)) (@ get v i)
     (let ((pos_piv int)) i
