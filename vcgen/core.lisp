@@ -308,8 +308,13 @@ defun-ish body and the resulting body as values."
   define."
   (declare (ignorable result-arg full-body))
   (let ((body (remove-decls (function-body (cdr definition)))))
-    `(defun ,function-name ()
-       (with-function-definition ',(cdr definition)
+    `(progn
+       ;; We "permanently" set the dynamic binding here, so that later
+       ;; define'd functions can also use this function's pre/post
+       ;; condition definition.
+       (setf *function-list* (cons ',(cdr definition) *function-list*))
+
+       (defun ,function-name ()
          (with-current-function ',function-name
            (with-goal-set
              (with-empty-premise-list

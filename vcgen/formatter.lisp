@@ -90,11 +90,12 @@
   (declare (ignore premise-list))
   "name_not_implemented")
 
-(defun clir-goals-to-string (goals)
+(defun clir-goals-to-string (goals &optional function-name)
   (let ((goal-count 0))
     (mapcar (lambda (premises)
               (format nil "goal ~A_~A: ~A~%"
-                      (get-premise-name premises)
+                      (or function-name
+                          (get-premise-name premises))
                       (incf goal-count)
                       (clir-premises-to-string premises)))
             goals)))
