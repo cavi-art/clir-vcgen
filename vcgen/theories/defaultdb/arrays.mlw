@@ -67,7 +67,7 @@ module ImmutabilityHelpers
   use import int.Int
   use import ArrayImports
 
-  let arrCopy(v:array int):(array int)
+  let arrcopy(v:array int):(array int)
       =
         ensures { length v = length result /\ forall i. 0<=i<length v -> result[i] = v[i] }
         ensures { array_eq result v }
@@ -83,7 +83,7 @@ module ImmutabilityHelpers
   let swap (v:array int) (i:int) (j:int) : (array int)
     requires { 0 <= i < length v /\ 0 <= j < length v }
     ensures { exchange result v i j }
-    = let v1 = arrCopy v in
+    = let v1 = arrcopy v in
       v1[i] <- v[j];
       v1[j] <- v[i];
       v1
