@@ -22,7 +22,7 @@
 
   (:export #:make-goal #:goal-proof-obligations #:goal-name)
 
-  (:export #:make-premise #:premise-formula #:premise-name))
+  (:export #:make-premise #:premise-formula #:premise-name #:premise-placeholder))
 
 
 (defpackage :ir.vc.core

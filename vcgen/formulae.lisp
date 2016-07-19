@@ -45,6 +45,15 @@
         (list :name name formula)
         formula)))
 
+(defgeneric premise-placeholder (premise)
+  (:documentation "Gets the possible placeholder that a premise may have."))
+
+(defmethod premise-placeholder ((premise premise))
+  (with-slots ((formula formula)) premise
+    (when (consp formula)
+      (member (first formula)
+              '(:precd_placeholder :postcd_placeholder)))))
+
 (defmethod print-object ((premise premise) stream)
   (with-accessors ((formula premise-formula)
                    (comment premise-comment)
