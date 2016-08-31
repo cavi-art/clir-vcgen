@@ -248,12 +248,17 @@ defun-ish body and the resulting body as values."
       ;; Simple s-exp tree walker
       (typecase formula
         (nil nil)
-        (symbol (let ((p (position formula original-symbols)))
-                  (if p
-                      (nth p new-symbols)
-                      formula)))
-        (cons (cons (rename-symbols (car formula) original-symbols new-symbols)
-                    (rename-symbols (cdr formula) original-symbols new-symbols)))
+        (symbol (unless (eq formula 'nil)
+                  (let ((p (position formula original-symbols)))
+                    (if p
+                        (nth p new-symbols)
+                        formula))))
+        (cons (if (eq (first formula) :name)
+                  (list :name
+                        (second formula)
+                        (rename-symbols (third formula) original-symbols new-symbols))
+                  (cons (rename-symbols (first formula) original-symbols new-symbols)
+                        (rename-symbols (rest formula) original-symbols new-symbols))))
         (t formula))))
 
 (defparameter ir.vc.core:*goal-set-hook* nil

@@ -82,54 +82,42 @@ program."
 ;;; Implementation details
 
 (defun synthetic-precondition-p (protogoal)
-  (let ((first-elt (premise-formula (second protogoal))))
-    (and (consp first-elt)
-         (eq (first first-elt)
+  (let ((first-elt (second protogoal)))
+    (and (eq (first (premise-placeholder first-elt))
              :precd_placeholder)
          (not (synthetic-postcondition-p protogoal)))))
 
 (defun synthetic-postcondition-p (protogoal)
-  (let ((first-elt (premise-formula (second protogoal)))
-        (last-elt (premise-formula (car (last protogoal)))))
-    (and
-     (consp first-elt)
-     (consp last-elt)
-     ;; Both are placeholders
-     (eq (first first-elt)
-         :precd_placeholder)
-     (eq (first last-elt)
-         :postcd_placeholder)
-
-     ;; for the same function
-     (eq (second first-elt)
-         (second last-elt)))))
+  (let ((first-placeholder (premise-placeholder (second protogoal)))
+        (last-placeholder (premise-placeholder (car (last protogoal)))))
+    (and (eq (first first-placeholder) :precd_placeholder)
+         (eq (first last-placeholder) :postcd_placeholder)
+         (eq (second first-placeholder)
+             (second last-placeholder)))))
 
 (defun proper-goal-p (protogoal)
   "A goal is proper if it does not contain any hole."
-  (and (or
-        (not (consp (premise-formula (car protogoal))))
-        (and
-         (not (eq (first (premise-formula (car protogoal)))
-                  :precd_placeholder))
-         (not (eq (first (premise-formula (car protogoal)))
-                  :postcd_placeholder))))
-       (or (not (cdr protogoal))
+  (or (not protogoal)
+      (and (not (hole-p (car protogoal)))
            (proper-goal-p (cdr protogoal)))))
 
 (defun hole-p (premise)
-  (and (consp (premise-formula premise))
-       (or (eq (first (premise-formula premise))
-               :precd_placeholder)
-           (eq (first (premise-formula premise))
-               :postcd_placeholder))))
+  (premise-placeholder premise))
 
 (defun rename-symbol-list (hole real-premise)
-  (reduce (lambda (premise current-rename)
-            (ir.vc.core.impl::rename-symbols premise
-                                             (first current-rename)
-                                             (second current-rename)))
-          (cddr hole)
-          :initial-value real-premise) ;; TODO Check if renames was a list or the rest of the list
+  (if (eq (first real-premise)
+          :name)
+
+      (list :name
+            (second real-premise)
+            (rename-symbol-list hole (third real-premise)))
+
+      (reduce (lambda (premise current-rename)
+                (ir.vc.core.impl::rename-symbols premise
+                                                 (first current-rename)
+                                                 (second current-rename)))
+              (cddr hole)
+              :initial-value real-premise)) ;; TODO Check if renames was a list or the rest of the list
   )
 
 (defun find-all-in-hole-haystack (premise haystack)
@@ -141,10 +129,9 @@ program."
         (list (list premise)))))
 
 (defun has-placeholder (placeholder premise)
-  (and (consp (premise-formula (second premise)))
-       (or (eq (first (premise-formula (second premise)))
-               placeholder)
-           (has-placeholder placeholder (cdr premise)))))
+  (or (eq (first (premise-placeholder (car premise)))
+          placeholder)
+      (has-placeholder placeholder (cdr premise))))
 
 (defun remove-first-placeholder (premise)
   (assert (or (not (second premise))
@@ -163,10 +150,10 @@ program."
   (butlast (cddr premise)))
 
 (defun patch-hole (premise pre post)
-  (let ((hole-haystack (case (first (premise-formula premise))
+  (let ((hole-haystack (case (first (premise-placeholder premise))
                          (:precd_placeholder pre)
                          (:postcd_placeholder post)))
-        (removal-function (case (first (premise-formula premise))
+        (removal-function (case (first (premise-placeholder premise))
                             (:precd_placeholder #'remove-first-placeholder)
                             (:postcd_placeholder #'remove-both-placeholders))))
     (mapcar
