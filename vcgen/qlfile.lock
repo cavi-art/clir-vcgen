@@ -1,16 +1,17 @@
 ("quicklisp" .
  (:class qlot.source.ql:source-ql-all
   :initargs (:project-name "quicklisp" :%version :latest)
-  :version "2016-05-31"))
+  :version "2016-08-25"))
 ("alexandria" .
  (:class qlot.source.ql:source-ql
   :initargs (:project-name "alexandria" :%version :latest)
-  :version "ql-2016-06-28"))
+  :version "ql-2016-08-25"))
 ("prove" .
  (:class qlot.source.ql:source-ql
   :initargs (:project-name "prove" :%version :latest)
-  :version "ql-2016-06-28"))
+  :version "ql-2016-08-25"))
 ("printv" .
  (:class qlot.source.ql:source-ql
   :initargs (:project-name "printv" :%version :latest)
-  :version "ql-2016-06-28"))
+  :version "ql-2016-08-25"))
+

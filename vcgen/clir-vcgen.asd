@@ -3,7 +3,7 @@
   :version "0.0.1"
   :author "Santiago Saavedra <s.saavedra@fdi.ucm.es>"
   :licence "AGPL3"
-  :depends-on (:printv)
+  :depends-on (:printv :clir-theories)
   :components ((:file "../cl-reexport")
                (:file "../utils" :depends-on ("../cl-reexport"))
                (:file "packages")
@@ -13,15 +13,12 @@
                (:file "builtins" :depends-on ("packages"  "../utils" "core"))
                (:file "assemble" :depends-on ("core"))
                (:file "formatter" :depends-on ("core"))
-               (:file "theories/fetcher")
-               (:file "theories/loader" :depends-on ("theories/fetcher"))
                (:file "backends" :depends-on ("../utils"))
                (:file "backends/why3" :depends-on ("../utils"
                                                    "assemble"
                                                    "backends"
                                                    "core"
-                                                   "formatter"
-                                                   "theories/fetcher"))
+                                                   "formatter"))
                (:file "facade" :depends-on ("core"
                                             "../utils"
                                             "formulae"
@@ -32,6 +29,5 @@
                                             "formatter"
                                             "assemble"
                                             "../utils"
-                                            "facade"
-                                            "theories/fetcher"))
+                                            "facade"))
                ))

@@ -1,10 +1,3 @@
-(defpackage :ir.vc.theories
-  (:use :cl)
-  (:export #:*enabled-theory-databases*)
-  (:export #:enable-default-theory-db #:enable-theory-db #:disable-theory-db
-           #:find-import-in-theory-db
-           #:get-theory-directory))
-
 (defpackage :ir.vc.reader
   (:use :cl)
   (:export :set-sharpsign-exclam-dispatch-character

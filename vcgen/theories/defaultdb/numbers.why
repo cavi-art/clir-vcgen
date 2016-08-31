@@ -1,4 +1,0 @@
-theory IntegerImports
-  use export int.Int
-end
-
