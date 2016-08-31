@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE why3session PUBLIC "-//Why3//proof session v5//EN"
+"http://why3.lri.fr/why3session.dtd">
+<why3session shape_version="4">
+<prover id="0" name="Alt-Ergo" version="1.01" timelimit="5" memlimit="2000"/>
+<prover id="1" name="Z3" version="4.4.1" timelimit="5" memlimit="2000"/>
+<file name="../arrays.mlw">
+<theory name="ArrayImports" sum="d41d8cd98f00b204e9800998ecf8427e">
+</theory>
+<theory name="ArrayLemmas" sum="455ec99d61f2b7fffbaa898c99ec42ef">
+ <goal name="empty_range_is_sorted">
+ <proof prover="0"><result status="valid" time="0.01" steps="7"/></proof>
+ </goal>
+ <goal name="permut_sub_commutative">
+ <proof prover="0"><result status="valid" time="0.04" steps="45"/></proof>
+ </goal>
+ <goal name="array_eq_is_permut_sub">
+ <proof prover="0"><result status="valid" time="0.20" steps="334"/></proof>
+ </goal>
+ <goal name="exchange_commutative">
+ <proof prover="0"><result status="valid" time="0.03" steps="263"/></proof>
+ </goal>
+ <goal name="exchange_is_permut">
+ <proof prover="0"><result status="valid" time="0.01" steps="9"/></proof>
+ </goal>
+ <goal name="permut_trans">
+ <proof prover="0"><result status="valid" time="0.02" steps="71"/></proof>
+ </goal>
+ <goal name="permut_trans_weakening">
+ <proof prover="1"><result status="valid" time="0.02"/></proof>
+ </goal>
+ <goal name="sorted_meaning">
+ <proof prover="0"><result status="valid" time="0.01" steps="10"/></proof>
+ </goal>
+ <goal name="is_sorted">
+ <proof prover="0"><result status="valid" time="0.02" steps="43"/></proof>
+ </goal>
+ <goal name="permut_null_interval">
+ <proof prover="0"><result status="valid" time="0.01" steps="17"/></proof>
+ </goal>
+</theory>
+<theory name="ImmutabilityHelpers" sum="257060c262d18d0ec769e3960de3f5ed">
+ <goal name="WP_parameter arrCopy" expl="VC for arrCopy">
+ <proof prover="0"><result status="valid" time="0.03" steps="47"/></proof>
+ </goal>
+ <goal name="WP_parameter swap" expl="VC for swap">
+ <proof prover="0"><result status="valid" time="0.04" steps="33"/></proof>
+ </goal>
+</theory>
+</file>
+</why3session>
