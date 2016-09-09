@@ -36,5 +36,5 @@
 
 (defun test ()
   (load "vcgen-test.asd")
-  (asdf:test-system 'vcgen-test))
+  (prove:run 'vcgen-test))
 
