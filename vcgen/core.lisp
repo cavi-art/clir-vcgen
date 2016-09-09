@@ -328,6 +328,20 @@ defun-ish body and the resulting body as values."
                                 :name ,(symbol-name function-name))
                    ,@ (mapcar #'maybe-macroexpand body))))))))))
 
+
+(defmacro ir.vc.core:asserts (assertion-list &body body)
+  (assert (not (cdr body)))
+  ;; For each assertion, add a proof obligation, and include the former assertions.
+  ;; Then continue with the body.
+  (labels ((build-assertion-code (asserts expression)
+             (if asserts
+                 `(progn
+                    (output-goal ',(car asserts) :name "assert")
+                    (with-premise (',(car asserts) :name "assert")
+                      ,(build-assertion-flow (cdr asserts) expression)))
+                 (maybe-macroexpand expression))))
+    (build-assertion-code assertion-list (car body))))
+
 (defmacro ir.vc.core:letfun (definitions
                              &body full-body)
   `(with-function-definitions ',definitions

@@ -45,6 +45,8 @@
 
   (:export :predicate)
 
+  (:export :asserts)
+
   ;; Basic types
   (:export :int)
   (:export :bool :true :false)
