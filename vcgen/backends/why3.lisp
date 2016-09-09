@@ -20,7 +20,7 @@
 
 (in-package :cl-user)
 (defpackage :ir.vc.backend.why3
-  (:use :cl :ir.utils :ir.vc.formulae :ir.vc.backend :ir.vc.theories)
+  (:use :cl :ir.vc.backend :ir.vc.theories)
   (:import-from :ir.vc.theories #:find-import-in-theory-db)
   (:import-from :ir.vc.assemble #:protogoals-to-goals)
   (:import-from :ir.vc.formatter #:clir-goal-to-string #:clir-goals-to-string)

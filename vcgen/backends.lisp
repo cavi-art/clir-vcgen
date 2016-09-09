@@ -20,7 +20,7 @@
 
 (in-package :cl-user)
 (defpackage :ir.vc.backend
-  (:use :cl :ir.utils)
+  (:use :cl)
   (:export #:*vc-backend*)
   (:export #:defbackend)
   (:export #:clir-pathspec-to-backend #:launch-ide #:launch-noninteractive
