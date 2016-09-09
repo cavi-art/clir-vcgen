@@ -2,7 +2,7 @@
 (defpackage :ir.vc.t.vc-gen
   (:use :cl
         :ir.utils :ir.vc.formulae
-        :ir.vc.formatter
+        :ir.vc.backend.why3.formatter
         :ir.vc.assemble)
   (:use :prove)
   (:import-from :ir.vc.core :define :declare :assertion :precd :postcd :and "@" "=" :tuple))

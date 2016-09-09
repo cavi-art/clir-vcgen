@@ -17,9 +17,13 @@
 ;;;
 ;;; You should have received a copy of the GNU Affero General Public License
 ;;; along with CAVIART-VCGEN.  If not, see <http://www.gnu.org/licenses/>.
+(defpackage :ir.vc.backend.why3.formatter
+  (:use :cl :ir.utils :ir.vc.formulae)
+  (:import-from :ir.vc.core :assertion :precd :postcd :default :*external-functions* :true :false)
+  (:import-from :ir.vc.core #:->)
+  (:export :clir-formula-to-string :clir-premises-to-string :clir-goals-to-string :clir-goal-to-string))
 
-(declaim (optimize debug))
-(in-package :ir.vc.formatter)
+(in-package :ir.vc.backend.why3.formatter)
 
 (defun clir-formula-to-string (formula)
   (labels ((is-infix (op)

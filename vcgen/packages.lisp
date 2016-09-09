@@ -97,8 +97,3 @@
   (:export :sel-array :mod-array :sel-array-heap
            :mod-array-heap :len-array-heap))
 
-(defpackage :ir.vc.formatter
-  (:use :cl :ir.utils :ir.vc.formulae)
-  (:import-from :ir.vc.core :assertion :precd :postcd :default :*external-functions* :true :false)
-  (:import-from :ir.vc.core #:->)
-  (:export :clir-formula-to-string :clir-premises-to-string :clir-goals-to-string :clir-goal-to-string))

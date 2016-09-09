@@ -12,22 +12,18 @@
                (:file "core" :depends-on ("packages" "../utils" "formulae"))
                (:file "builtins" :depends-on ("packages"  "../utils" "core"))
                (:file "assemble" :depends-on ("core"))
-               (:file "formatter" :depends-on ("core"))
-               (:file "backends" :depends-on ("../utils"))
-               (:file "backends/why3" :depends-on ("../utils"
-                                                   "assemble"
+               (:file "backends")
+               (:file "backends/why3-formatter" :depends-on ("core"))
+               (:file "backends/why3" :depends-on ("assemble"
                                                    "backends"
                                                    "core"
-                                                   "formatter"))
+                                                   "backends/why3-formatter"))
                (:file "facade" :depends-on ("core"
                                             "../utils"
                                             "formulae"
-                                            "formatter"
-                                            "backends"))
-               (:file "vc-gen" :depends-on ("core"
-                                            "builtins"
-                                            "formatter"
                                             "assemble"
+                                            "backends"))
+               (:file "vc-gen" :depends-on ("builtins"
                                             "../utils"
                                             "facade"))
                ))

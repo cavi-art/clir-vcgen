@@ -20,7 +20,7 @@
 
 
 (defpackage :ir.vc.facade
-  (:use :common-lisp :ir.utils :ir.vc.formatter :ir.vc.backend)
+  (:use :common-lisp :ir.utils :ir.vc.backend)
   (:nicknames :ir.vc)
   (:export #:load-eval-file #:read-file #:generate-theory-file #:test-clir
            #:easy-file #:easy-test #:easy-protogoals))
@@ -110,4 +110,4 @@ get read and `INTERN'-ed on their proper packages."
 consumable output."
   `(progn
      (load-eval-file (pathname (easy-file ,basename)))
-     (clir-goals-to-string ,(easy-funcall% function package))))
+     (ir.vc.backend.why3.formatter::clir-goals-to-string ,(easy-funcall% function package))))

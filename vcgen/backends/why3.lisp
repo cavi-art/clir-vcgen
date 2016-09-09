@@ -20,10 +20,10 @@
 
 (in-package :cl-user)
 (defpackage :ir.vc.backend.why3
-  (:use :cl :ir.vc.backend :ir.vc.theories)
+  (:use :cl :ir.vc.backend :ir.vc.formulae :ir.vc.theories)
   (:import-from :ir.vc.theories #:find-import-in-theory-db)
   (:import-from :ir.vc.assemble #:protogoals-to-goals)
-  (:import-from :ir.vc.formatter #:clir-goal-to-string #:clir-goals-to-string)
+  (:import-from :ir.vc.backend.why3.formatter #:clir-goal-to-string #:clir-goals-to-string)
   (:import-from :ir.vc.core #:*verification-unit-name* #:*verification-unit-use-list*))
 (in-package :ir.vc.backend.why3)
 

@@ -36,5 +36,6 @@
 
 (defun test ()
   (load "vcgen-test.asd")
-  (prove:run 'vcgen-test))
+  (funcall (eval '(find-symbol (symbol-name '#:run) 'prove))
+           'vcgen-test))
 
