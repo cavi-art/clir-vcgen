@@ -15,6 +15,8 @@
                     (and (@ <= 0 j)
                          (@ < j (@ length v)))
                     (@ <= i (@ + j (the int 1)))
+                    (and (@ <= 0 pos_piv)
+                         (@ < pos_piv i))
                     (@ <= (@ get v pos_piv) piv)
                     (forall ((k int))
                             (-> (@ < pos_piv k i)
@@ -24,7 +26,6 @@
                          (@ <= i0 i))
                     (@ <= (@ - i0 (the int 1))
                           pos_piv)))
-                   
             (postcd (and
                      (@ <= pos_piv pos_piv1)
                      (@ <= pos_piv1 j)
@@ -90,6 +91,30 @@
           (let ((v2 (array int))) (@ swap v1 i pos_piv1)
             (tuple v2 pos_piv1)))))))
 
+(define qsort ((v (array int)) (i int) (j int)) ((vsort (array int)))
+  (declare
+   (assertion
+    (precd (and (@ <= (the int 0) i (@ length v))
+                (and (@ <= (the int -1) j)
+                     (@ < j (@ length v)))))
+    (postcd (and (@ sorted_sub vsort i (@ + j (the int 1)))
+                 (@ permut_sub v vsort i (@ + j (the int 1)))))))
+  (let ((b bool)) (@ < i j)
+    (case b
+      ((the bool true)
+       (let ((v1 (array int)) (p int)) (@ partition v i j)
+         (let ((p1 int)) (@ - p (the int 1))
+           (let ((v2 (array int))) (@ qsort v1 i p1)
+             (let ((p2 int)) (@ + p (the int 1))
+               (let ((v3 (array int))) (@ qsort v2 p2 j)
+                 (asserts ((forall ((k int) (l int))
+                                   (-> (@ <= i k p l j)
+                                       (@ <= (@ get v3 k)
+                                             (@ get v3 p)
+                                             (@ get v3 l))))
+                           (@ permut_sub v2 v1 i (@ + j 1)))
+                   v3)))))))
+      ((the bool false) (@ arrCopy v)))))
 
 (define quicksort ((v (array int)) (n int)) ((vres (array int)))
   (declare
@@ -98,44 +123,8 @@
                 (@ = n (@ length v))))
     (postcd (and (@ sorted vres)
 		 (@ permut_all v vres)))))
-  (letfun
-      ((qsort ((v (array int)) (i int) (j int)) ((vsort (array int)))
-	 (declare
-	  (assertion
-	   (precd (and (@ <= (the int 0) i (@ length v))
-                       (and (@ <= (the int -1) j)
-                            (@ < j (@ length v)))))
-	   (postcd (and (@ sorted_sub vsort i (@ + j (the int 1)))
-			(@ permut_sub v vsort i (@ + j (the int 1)))))))
-	 (let ((b bool)) (@ < i j)
-           (case b
-             ((the bool true) (@ f1 v i j))
-             ((the bool false) v))))
-       (f1 ((v (array int)) (i int) (j int)) ((result (array int)))
-	 (let ((v1 (array int)) (p int)) (@ partition v i j)
-           (let ((p1 int)) (@ - p (the int 1))
-             (let ((v2 (array int))) (@ qsort v1 i p1)
-               (let ((p2 int)) (@ + p (the int 1))
-                 (let ((v3 (array int))) (@ f2 v2 p2 j p i v1)
-                   v3))))))
-       (f2 ((v2 (array int)) (p2 int) (j int) (p int :ghost) (i int :ghost) (v1 (array int) :ghost)) ((v3 (array int)))
-         (declare
-          (assertion
-           (precd (and (@ <= (the int 0) i (@ length v2))
-                       (and (@ <= (the int -1) j)
-                            (@ < j (@ length v2)))))
-           (postcd (and (@ sorted_sub v3 i (@ + j (the int 1)))
-			(@ permut_sub v3 v2 i (@ + j (the int 1)))
-                        (forall ((k int) (l int))
-                                (-> (@ <= i k p l j)
-                                    (@ <= (@ get v3 k)
-                                          (@ get v3 p)
-                                          (@ get v3 l))))
-                        (@ permut_sub v2 v1 i (@ + j (the int 1)))
-                        (@ permut_sub v3 v1 i (@ + j (the int 1)))))))
-         (@ qsort v2 p2 j)))
-    (let ((n1 int)) (@ - n (the int 1))
-      (@ qsort v (the int 0) n1))))
+  (let ((n1 int)) (@ - n (the int 1))
+    (@ qsort v (the int 0) n1)))
 
 
 ;; Local Variables:
