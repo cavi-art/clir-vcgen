@@ -97,5 +97,7 @@
   ;; Export simulated heap and array
   (:export :heap :heap-p :loc :new-heap :sel-heap :mod-heap :newptr-in-heap)
   (:export :sel-array :mod-array :sel-array-heap
-           :mod-array-heap :len-array-heap))
+           :mod-array-heap :len-array-heap)
+
+  (:export #:arrcopy))
 

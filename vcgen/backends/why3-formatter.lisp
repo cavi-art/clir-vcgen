@@ -40,6 +40,9 @@
                        (quote (second term))
                        (ir.vc.core:the (third term))
                        (ir.vc.core:@ (apply-predicate (rest term) recursive))
+                       (ir.vc.core:tuple (format nil "(~@{~A~^, ~})"
+                                                 (mapcar #'clir-term-to-string
+                                                         (rest term))))
                        (t (error "Term ~S not understood." term))))
                (t (error "Term ~S not understood." term))))
            (is-array-access (fname)

@@ -52,11 +52,12 @@
   `(pushnew '(,name ,typed-lambda-list ,typed-result-list
               (declare (assertion
                         (precd true) ;; Why3 knows more about the precd
-                        (postcd (= (tuple ,(drop-types typed-result-list))
-                                   (@ ,name ,(drop-types typed-lambda-list))))))
+                        (postcd (@ = (tuple ,@(drop-types typed-result-list))
+                                     (@ ,name ,@(drop-types typed-lambda-list))))))
               (error "Opaque term. Axiomatized but not implemented."))
             ir.vc.core:*external-functions*))
 
+(defpred-ext-axiomatized arrcopy ((a (array int))) ((r (array int))))
 (defpred-ext-axiomatized length ((a (array int))) ((r int)))
 (defpred-ext-axiomatized get ((a (array int)) (ix int)) ((v int)))
 (defpred-ext-axiomatized swap ((a (array int)) (i int) (j int)) ((ares (array int))))
