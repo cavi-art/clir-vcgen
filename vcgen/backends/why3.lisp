@@ -52,6 +52,7 @@
 
     (format stream "~@<~2Itheory ~A ~:@_~
 ~{use import ~A ~^~:@_~}~:@_~:@_~
+function arrcopy (v:array int):array int = v~:@_
 ~{~2I~A~:@_~}~
 ~:@_end~:@_~:>"
             theory-name
