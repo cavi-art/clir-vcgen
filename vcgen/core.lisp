@@ -338,7 +338,7 @@ defun-ish body and the resulting body as values."
                  `(progn
                     (output-goal ',(car asserts) :name "assert")
                     (with-premise (',(car asserts) :name "assert")
-                      ,(build-assertion-flow (cdr asserts) expression)))
+                      ,(build-assertion-code (cdr asserts) expression)))
                  (maybe-macroexpand expression))))
     (build-assertion-code assertion-list (car body))))
 
