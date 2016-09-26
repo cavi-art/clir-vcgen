@@ -28,7 +28,7 @@
                                       (@ = a c)
                                       (@ = a d)))))
                (ir.vc.core.impl::terminal-expression (a a a)))))
-    (protogoals-to-goals (funcall f))))
+    (protogoals-to-goals (goal-proof-obligations (funcall f)))))
 
 (defun test/multiple-ret-values/tuple ()
   (let ((f (gensym)))
@@ -39,7 +39,7 @@
                                     (@ = a c)
                                     (@ = a d)))))
              (tuple a a a)))
-    (protogoals-to-goals (funcall f))))
+    (protogoals-to-goals (goal-proof-obligations (funcall f)))))
 
 (plan 1)
 
