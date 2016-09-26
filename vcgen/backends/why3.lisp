@@ -43,7 +43,9 @@
 (defun why3-generate-theory (goal-set stream)
   (let ((goals (clir-goals-to-string (protogoals-to-goals (goal-proof-obligations goal-set))
                                      (goal-name goal-set)))
-        (theory-name *verification-unit-name*)
+        (theory-name (format nil "~A_~A"
+                             *verification-unit-name*
+                             (goal-name goal-set)))
         (why3-imports (remove-if-not
                        #'identity
                        (mapcar
