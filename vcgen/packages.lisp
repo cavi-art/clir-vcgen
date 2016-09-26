@@ -99,5 +99,5 @@
   (:export :sel-array :mod-array :sel-array-heap
            :mod-array-heap :len-array-heap)
 
-  (:export #:arrcopy))
+  (:export #:arrcopy #:get #:swap))
 
