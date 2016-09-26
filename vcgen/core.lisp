@@ -436,7 +436,7 @@ defun-ish body and the resulting body as values."
                (assume-binding (,(drop-types typed-var-list) ,val
                                  :name "let-binding")
                  ,@(mapcar #'maybe-macroexpand body)))
-            `(assume-binding (,(drop-types typed-var-list) ,val
+            `(assume-binding (,(cons 'ir.vc.core:tuple (drop-types typed-var-list)) ,val
                                :name "let-binding")
                ,@(mapcar #'maybe-macroexpand body))))))
 
