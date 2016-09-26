@@ -3,7 +3,7 @@
   :version "0.0.1"
   :author "Santiago Saavedra <s.saavedra@fdi.ucm.es>"
   :licence "AGPL3"
-  :depends-on (:printv :clir-theories)
+  :depends-on (:alexandria :printv :clir-theories :net.didierverna.clon)
   :components ((:file "../cl-reexport")
                (:file "../utils" :depends-on ("../cl-reexport"))
                (:file "packages")

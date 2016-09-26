@@ -1,0 +1,42 @@
+#!/bin/sh
+#|-*- mode:lisp -*-|#
+#| Generate the quicklisp directory from qlfile
+exec ros -Q -- $0 "$@"
+|#
+(progn ;;init forms
+  )
+
+(defpackage :ros.script.populate-quicklisp.3681732298
+  (:use :cl :asdf))
+(in-package :ros.script.populate-quicklisp.3681732298)
+
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (ql:quickload :qlot))
+
+(defun help ()
+  (format t "This package accepts the following arguments:~%~
+      ~4I--update.~%~
+The use of this argument updates any (including existing) qlot-installed libraries."))
+
+(defun main (&rest argv)
+  (declare (ignorable argv))
+  (load "clir-vcgen.asd")
+
+  (when (or (find "--help" argv :test #'string=)
+            (find "-h" argv :test #'string=))
+    (help)
+    (terpri)
+    (return-from main))
+  
+  (ql:quickload 'prove)
+  (qlot:install 'clir-vcgen)
+
+  ;; Optionally update the packages
+
+  (if (or (find "--update" argv :test #'string=)
+          (find "-u" argv :test #'string=))
+      (progn
+        (format t "Updating libraries...~%")
+        (qlot:update 'clir2mlw))
+      (format t "Use --update to update existing libraries later.~%")))
+;;; vim: set ft=lisp lisp:
