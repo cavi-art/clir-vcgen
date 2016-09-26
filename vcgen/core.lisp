@@ -394,7 +394,8 @@ defun-ish body and the resulting body as values."
 (defun case-alternative-default (condition default-alternative alternative-list)
   (if alternative-list
       (let ((pattern (caar alternative-list)))
-        `(with-premise ((list 'ir.vc.core:@ '<> ,(drop-types-from-case-pattern pattern) ',condition))
+        `(with-premise ((list 'ir.vc.core:@ '<> ,(drop-types-from-case-pattern pattern) ',condition)
+                        :name "case_default_pattern")
            ,(case-alternative-default condition default-alternative (cdr alternative-list))))
       (let ((default-body (second default-alternative)))
         (maybe-macroexpand default-body))))
