@@ -69,7 +69,7 @@
           "There are two different postconditions in this example")
       (is (length computed-goals)
           2
-          "There should two goals in this example"))))
+          "There should be two goals in this example"))))
 
 
 (finalize)
