@@ -39,7 +39,7 @@
   name
   proof-obligations)
 
-(defmethod premise-formula ((premise premise))
+(defmethod premise-named-formula ((premise premise))
   (with-slots ((formula formula) (name name)) premise
     (if name
         (list :name name formula)

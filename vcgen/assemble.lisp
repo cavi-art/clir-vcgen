@@ -121,9 +121,9 @@ program."
   )
 
 (defun find-all-in-hole-haystack (premise haystack)
-  (let ((function-name (second (premise-formula premise))))
+  (let ((function-name (second (premise-named-formula premise))))
     (or (remove-if-not (lambda (maybe-needle)
-                         (eq (second (premise-formula (second maybe-needle)))
+                         (eq (second (premise-named-formula (second maybe-needle)))
                              function-name))
                        haystack)
         (list (list premise)))))
@@ -158,7 +158,7 @@ program."
                             (:postcd_placeholder #'remove-both-placeholders))))
     (mapcar
      #'(lambda (subst)
-         (rename-symbol-list (premise-formula premise)
+         (rename-symbol-list (premise-named-formula premise)
                              (funcall removal-function subst)))
      (find-all-in-hole-haystack premise
                                 hole-haystack))))
