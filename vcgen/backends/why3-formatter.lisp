@@ -88,7 +88,7 @@
     (when premises
       (concatenate 'string (format nil "~(~A~)~@[~&~I -> ~]"
                                    (clir-formula-to-string (premise-formula (first premises)))
-                                   (and (not-quantifier (premise-formula (first premises)))
+                                   (and (not-quantifier (premise-named-formula (first premises)))
                                         (rest premises)))
                    (clir-premises-to-string (rest premises))))))
 
