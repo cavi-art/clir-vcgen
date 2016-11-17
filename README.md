@@ -9,6 +9,50 @@ generates verification conditions, and RUNTIME executes the CLIR
 files.
 
 
+State of implementation
+=======================
+
+This software is still alpha quality and is not ready to use in
+production.
+
+Several features are missing from the CLIR treatment, namely:
+
+1. Currently, not all variables that might be clobbered are rewritten when bound
+2. It does not handle the *asserts* IR expression
+3. Does not handle data type declarations
+4. Does not handle possible user-entered lemmas or axioms
+5. Cannot be plugged in theories
+6. Cannot be executed as a binary (that is a work-in-progress)
+
+
+Known issue #1 example
+-------
+
+Given a function
+
+```
+(define f (()) ((r int))
+  (declare (assertion
+      (precd (forall ((x int)) true))
+      (postcd (@ = r 5))))
+  (the int 5))
+  
+(define g (()) ((r int))
+  (declare
+    (assertion
+	  (precd (forall ((x int)) true))
+      (postcd (@ = r 5))))
+  (let ((x int)) (@ f)
+    x)
+```
+
+This should rewrite the `f` postcondition `r` in terms of the `x`
+given in the body of `g`, but the inner forall in the `f` precondition
+should be rewritten by a fresh variable that does not conflict with
+the `x` in `g`.
+
+
+
 Description
 ===========
 
