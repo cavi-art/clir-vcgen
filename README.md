@@ -4,6 +4,10 @@ CAVI-ART CLIR-VCGEN
 CLIR-VCGEN is a Verification Condition Generator for verification
 purposes on CLIR files.
 
+This repository holds both packages: a VCGEN and a RUNTIME. VCGEN
+generates verification conditions, and RUNTIME executes the CLIR
+files.
+
 
 Description
 ===========
@@ -14,20 +18,37 @@ syntax, which gets compiled to executable expressions.
 
 We have a backend system for supporting several backends, both
 interactively and non-interactively. Currently, we only support Why3
-as an interactive backend. In the future, a better API will export the
-underlying backend's options for improving the proofs.
+as an interactive backend (via Why3 IDE). In the future, a better API
+will export the underlying backend's options for improving the proofs.
 
 We also have a theory database, so that different theories can be used
 in different CLIR files which may come from different origins, and,
 for example, need reasoning about numbers taking machine arithmetic
 into account or not.
 
+The theory database is available at
+https://github.com/cavi-art/clir-theories
+
+
+Preconditions
+=============
+
+In order to use the VCGEN, you will need [roswell][ros], the lisp
+installer and launcher that just works.
+
+Follow the instructions on Roswell's wiki to install it on your
+machine. That should leave you with SBCL (a Common Lisp compiler)
+installed. The rest of the preconditions will be installed
+automatically on the next time you load the `init.lisp` file.
+
+  [ros]: https://github.com/roswell/roswell
+
 
 Usage
 =====
 
-For the moment, the vcgen can be invoked from an interactive lisp
-session (or from another lisp system), via the `ir.vc.user:test-clir`
+For the moment, the vcgen can only be invoked from an interactive lisp
+session (or from another lisp program), via the `ir.vc.user:test-clir`
 function, or more easily, via the `ir.vc.user:easy-test` macro.
 
 
@@ -35,7 +56,7 @@ Usage with easy-test
 --------------------
 
 - Launch a lisp session from the `vcgen/` directory
-- Write `(load "init.lisp")` in the lisp REPL
+- Write `(load "init.lisp")` in the Lisp shell
 - Write `(easy-test qsort quicksort 'qsort)`
 
 
@@ -50,14 +71,9 @@ easy-test synposis
   VERIFICATION-UNIT) in order to find the toplevel function in it.
 
 
-Dependencies
-============
-
-This project needs QuickLisp and uses QLot for managing some of its
-dependencies.
-
-Use `(qlot:install 'clir2mlw)` after the first clone to get the
-dependencies.
+Beware that the first two elements are symbols (not strings) and thus
+do not need quotes, and the third one must be preceeded by a single
+quote (it is a quoted symbol).
 
 
 Contributing
